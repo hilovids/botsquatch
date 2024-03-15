@@ -4,7 +4,7 @@ const { EmbedBuilder } = require('discord.js');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('goldstar')
-		.setDescription('Replies with foot!')
+		.setDescription('Assign a gold star to a camper!')
         .addUserOption(option => option.setName('user').setDescription("The camper getting the gold star."))
         .setDefaultMemberPermissions(0),
 	async execute(interaction) {
