@@ -115,7 +115,7 @@ module.exports = {
             return;
         }
 
-        // await updateInfo(connection, discordUser);
+        await updateInfo(connection, discordUser);
 
         const exampleEmbed = new EmbedBuilder()
         .setColor(0x003280)
