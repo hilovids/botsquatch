@@ -119,7 +119,7 @@ module.exports = {
 
         const exampleEmbed = new EmbedBuilder()
         .setColor(0x003280)
-        .setTitle(`You dredged ${seachartSpace}.`)
+        .setTitle(`You scanned ${seachartSpace}.`)
         .setURL('https://hilovids.github.io/camp-hilo/index.html')
         .setDescription(scanResult(seachartSpace))
         .setThumbnail('https://imgur.com/mfc6IFp.png')

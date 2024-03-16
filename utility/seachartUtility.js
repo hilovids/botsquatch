@@ -102,31 +102,65 @@ function getGriddy(space) {
     const columns = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
     const rows = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-    let grid = '';
+    let grid = '🌟🇦 🇧 🇨 🇩 🇪 🇫 🇬 🇭 🇮 🇯\n';
     for (let i = 0; i < rows.length; i++) {
-      for (let j = 0; j < columns.length; j++) {
-        const currentSpace = columns[j] + rows[i];
-        switch (currentSpace){
-            case "a0":
-                cellContent = '🗿'
+        let numEmoji = ""
+        switch(i){
+            case 0:
+                numEmoji = "0️⃣"
                 break;
-            case "a9":
-                cellContent = '🔥'
+            case 1:
+                numEmoji = "1️⃣"
                 break;
-            case "j0":
-                cellContent = '🌊'
+            case 2:
+                numEmoji = "2️⃣"
                 break;
-            case "j9":
-                cellContent = '🌬️'
+            case 3:
+                numEmoji = "3️⃣"
                 break;
-            case spacelower:
-                cellContent = '⛵'
+            case 4:
+                numEmoji = "4️⃣"
                 break;
-            default:
-                cellContent = '🟦'
+            case 5:
+                numEmoji = "5️⃣"
+                break;
+            case 6:
+                numEmoji = "6️⃣"
+                break;
+            case 7:
+                numEmoji = "7️⃣"
+                break;
+            case 8:
+                numEmoji = "8️⃣"
+                break;
+            case 9:
+                numEmoji = "9️⃣"
+                break;
         }
-        grid += cellContent + ' ';
-      }
+        grid += numEmoji
+        for (let j = 0; j < columns.length; j++) {
+            const currentSpace = columns[j] + rows[i];
+            switch (currentSpace){
+                case "a0":
+                    cellContent = '🗿'
+                    break;
+                case "a9":
+                    cellContent = '🔥'
+                    break;
+                case "j0":
+                    cellContent = '🌊'
+                    break;
+                case "j9":
+                    cellContent = '🌬️'
+                    break;
+                case spacelower:
+                    cellContent = '⛵'
+                    break;
+                default:
+                    cellContent = '🟦'
+            }
+            grid += cellContent + ' ';
+        }
       grid += '\n';
     }
     grid +=`You are currently on ${space}. Columns are [A-J] and Rows are [0-9].`
