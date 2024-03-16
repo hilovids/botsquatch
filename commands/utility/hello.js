@@ -8,7 +8,7 @@ module.exports = {
 		.setName('hello')
 		.setDescription('Sets preliminary info.')
         .addStringOption(option => option.setName('preferred_name').setDescription("How you'd like to appear in the system").setRequired(true))
-        .addStringOption(option => option.setName('seachart_space').setDescription("Where you'd like your boat to start")).setRequired(true)
+        .addStringOption(option => option.setName('seachart_space').setDescription("Where you'd like your boat to start").setRequired(true))
         .setDefaultMemberPermissions(0),
 	async execute(interaction) {
         const discordUser = interaction.user;
