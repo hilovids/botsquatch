@@ -167,4 +167,12 @@ function getGriddy(space) {
     return grid;
   }
 
-module.exports = { hasSundayPassedSince, isValidGridSpace, distanceBetweenSpaces, dredgeResult, scanResult, getGriddy }
+  function getList(userData){
+    let text = '';
+    userData.forEach(element => {
+        text += `${element.preferred_name} - ${element.seachart_loc}\n`
+    });
+    return text;
+  }
+
+module.exports = { hasSundayPassedSince, isValidGridSpace, distanceBetweenSpaces, dredgeResult, scanResult, getGriddy, getList }
