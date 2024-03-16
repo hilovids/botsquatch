@@ -92,12 +92,12 @@ module.exports = {
 
         //console.log("player exists");
 
-        if(distanceBetweenSpaces(userData.seachart_loc.toLowerCase(), seachartSpace.toLowerCase()) > 3){
+        if(distanceBetweenSpaces(userData.seachart_loc.toLowerCase(), seachartSpace.toLowerCase()) > 2){
             const exampleEmbed = new EmbedBuilder()
             .setColor(0x003280)
             .setTitle(`Your ship isn't that fast.`)
             .setURL('https://hilovids.github.io/camp-hilo/index.html')
-            .setDescription(`You can only move up to 3 spaces.`)
+            .setDescription(`You can only move up to 2 spaces.`)
             .setThumbnail('https://imgur.com/mfc6IFp.png')
             .setTimestamp()
             await interaction.reply({ embeds: [exampleEmbed] });
