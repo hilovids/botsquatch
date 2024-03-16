@@ -3,6 +3,38 @@ const { EmbedBuilder } = require('discord.js');
 const { mySql_host, mySql_password, mySql_port, mySql_user, mySql_database} = require('../../config.json');
 const mysql = require('mysql');
 
+function getUser(connection, discordUser){
+    return new Promise((resolve, reject)=>{
+        const getQuery = `
+            SELECT * FROM camp_hilo WHERE user_id = ${discordUser.id}
+        `;
+        connection.query(getQuery,  (error, results)=>{
+            if(error){
+                return reject(error);
+            }
+            // console.log(results);
+            return resolve(results);
+        });
+    });
+};
+
+function updateInfo(connection, discordUser){
+    return new Promise((resolve, reject)=>{
+        const updateQuery = `
+            INSERT INTO camp_hilo (user_id, goldstars_count)
+            VALUES (${discordUser.id}, 1)
+            ON DUPLICATE KEY UPDATE 
+                goldstars_count = goldstars_count + 1;
+        `;
+        connection.query(updateQuery,  (error, results)=>{
+            if(error){
+                return reject(error);
+            }
+            return resolve(results);
+        });
+    });
+};
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('goldstar')
@@ -21,43 +53,19 @@ module.exports = {
         });
         
         // Adds user if they do not exist
-        const updateQuery = `
-            INSERT INTO camp_hilo (user_id, user_name, goldstars_count)
-            VALUES (${discordUser.id}, "${discordUser.username}", 1)
-            ON DUPLICATE KEY UPDATE 
-                goldstars_count = goldstars_count + 1,
-                user_name = "${discordUser.username}";
-        `;
+        const updateResponse = await updateInfo(connection, discordUser);
 
-        connection.query(updateQuery, async (err, result) => {
-            if (err) {
-                console.error('Error executing query:', err);
-                return;
-            }
-        });
+        const getResponse = await getUser(connection, discordUser);
+        const stars = getResponse[0].goldstars_count;
 
-        const getQuery = `
-            SELECT goldstars_count FROM camp_hilo WHERE user_id = ${discordUser.id}
-        `;
-
-        connection.query(getQuery, async (err, result) => {
-            if (err) {
-                console.error('Error executing query:', err);
-                return;
-            }
-
-            const stars = result[0].goldstars_count;
-
-            const exampleEmbed = new EmbedBuilder()
-            .setColor(0xFEB316)
-            .setTitle(`${discordUser.username} gets a Gold Star!`)
-            .setURL('https://hilovids.github.io/camp-hilo/index.html')
-            .setDescription(`Wow! Congrats! You now have... ${stars} in total.`)
-            .setThumbnail('https://imgur.com/mfc6IFp.png')
-            .setTimestamp()
-            await interaction.reply({ embeds: [exampleEmbed] });
-        });
-
+        const exampleEmbed = new EmbedBuilder()
+        .setColor(0xFEB316)
+        .setTitle(`${discordUser.username} gets a Gold Star!`)
+        .setURL('https://hilovids.github.io/camp-hilo/index.html')
+        .setDescription(`Wow! Congrats! You now have... ${stars} in total.`)
+        .setThumbnail('https://imgur.com/mfc6IFp.png')
+        .setTimestamp()
+        await interaction.reply({ embeds: [exampleEmbed] });
         connection.end();
     }
 };

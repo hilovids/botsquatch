@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { EmbedBuilder } = require('discord.js');
 const mysql = require('mysql');
 const { mySql_host, mySql_password, mySql_port, mySql_user, mySql_database} = require('../../config.json');
-const { hasSundayPassedSince, isValidGridSpace, distanceBetweenSpaces } = require("../../utility/seachartUtility.js");
+const { hasSundayPassedSince, isValidGridSpace, distanceBetweenSpaces, scanResult } = require("../../utility/seachartUtility.js");
 
 function getUser(connection, discordUser){
     return new Promise((resolve, reject)=>{
@@ -19,19 +19,15 @@ function getUser(connection, discordUser){
     });
 };
 
-function updateInfo(connection, discordUser, space){
+function updateInfo(connection, discordUser){
     return new Promise((resolve, reject)=>{
         const time = Date.now().toString();
-        console.log(time);
-        console.log(space);
         const updateQuery = `
-            INSERT INTO camp_hilo (user_id, seachart_loc, seachart_move)
-            VALUES (${discordUser.id}, "${space}", ${time})
+            INSERT INTO camp_hilo (user_id, seachart_scan)
+            VALUES (${discordUser.id}, ${time})
             ON DUPLICATE KEY UPDATE 
-                seachart_loc = "${space}",
-                seachart_move = "${time}";
+            seachart_scan = "${time}";
         `;
-        console.log(space);
         connection.query(updateQuery,  (error, results)=>{
             if(error){
                 console.log(error);
@@ -44,9 +40,9 @@ function updateInfo(connection, discordUser, space){
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('seachart_move')
-		.setDescription('Take your move action on the Sea Chart!')
-        .addStringOption(option => option.setName('seachart_space').setDescription("The space to move to.").setRequired(true)),
+		.setName('seachart_scan')
+		.setDescription('Take your scan action on the Sea Chart!')
+        .addStringOption(option => option.setName('seachart_space').setDescription("The space to scan.").setRequired(true)),
 	async execute(interaction) {
         const discordUser = interaction.user;
         const seachartSpace = interaction.options.getString("seachart_space");
@@ -58,21 +54,6 @@ module.exports = {
             password: mySql_password,
             database: mySql_database
         });
-
-        if (!isValidGridSpace(seachartSpace)){
-            const exampleEmbed = new EmbedBuilder()
-            .setColor(0x003280)
-            .setTitle(`Invalid Space Format`)
-            .setURL('https://hilovids.github.io/camp-hilo/index.html')
-            .setDescription(`I don't know what space that is because I'm dumb and bigfoot. Try formatting it like A1 or a1`)
-            .setThumbnail('https://imgur.com/mfc6IFp.png')
-            .setTimestamp()
-            await interaction.reply({ embeds: [exampleEmbed] });
-            connection.end();
-            return;
-        }
-
-        //console.log("spaces are valid");
 
         const getResponse = await getUser(connection, discordUser);
         const userData = getResponse[0];
@@ -92,12 +73,12 @@ module.exports = {
 
         //console.log("player exists");
 
-        if(distanceBetweenSpaces(userData.seachart_loc.toLowerCase(), seachartSpace.toLowerCase()) > 3){
+        if (!isValidGridSpace(seachartSpace)){
             const exampleEmbed = new EmbedBuilder()
             .setColor(0x003280)
-            .setTitle(`Your ship isn't that fast.`)
+            .setTitle(`Invalid Space Format`)
             .setURL('https://hilovids.github.io/camp-hilo/index.html')
-            .setDescription(`You can only move up to 3 spaces.`)
+            .setDescription(`I don't know what space that is because I'm dumb and bigfoot. Try formatting it like A1 or a1`)
             .setThumbnail('https://imgur.com/mfc6IFp.png')
             .setTimestamp()
             await interaction.reply({ embeds: [exampleEmbed] });
@@ -105,10 +86,23 @@ module.exports = {
             return;
         }
 
-        //console.log("spaces are close to each other");
+        //console.log("spaces are valid");
+
+        if(distanceBetweenSpaces(userData.seachart_loc.toLowerCase(), seachartSpace.toLowerCase()) > 1){
+            const exampleEmbed = new EmbedBuilder()
+            .setColor(0x003280)
+            .setTitle(`Your ship can't reach that spot.`)
+            .setURL('https://hilovids.github.io/camp-hilo/index.html')
+            .setDescription(`You can only scan up to 1 space away.`)
+            .setThumbnail('https://imgur.com/mfc6IFp.png')
+            .setTimestamp()
+            await interaction.reply({ embeds: [exampleEmbed] });
+            connection.end();
+            return;
+        }
 
         // check time to make sure the new week has elapsed
-        if(!hasSundayPassedSince(userData.seachart_move)){
+        if(!hasSundayPassedSince(userData.seachart_scan)){
             const exampleEmbed = new EmbedBuilder()
             .setColor(0x003280)
             .setTitle(`You already used this command this week.`)
@@ -121,13 +115,13 @@ module.exports = {
             return;
         }
 
-        await updateInfo(connection, discordUser, seachartSpace);
+        // await updateInfo(connection, discordUser);
 
         const exampleEmbed = new EmbedBuilder()
         .setColor(0x003280)
-        .setTitle(`You moved to ${seachartSpace}.`)
+        .setTitle(`You dredged ${seachartSpace}.`)
         .setURL('https://hilovids.github.io/camp-hilo/index.html')
-        .setDescription(`You can move again after next Sunday!`)
+        .setDescription(scanResult(seachartSpace))
         .setThumbnail('https://imgur.com/mfc6IFp.png')
         .setTimestamp()
         await interaction.reply({ embeds: [exampleEmbed] });
