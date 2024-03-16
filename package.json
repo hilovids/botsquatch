@@ -1,14 +1,16 @@
 {
-  "name": "botsquatch",
+  "name": "example-app",
   "version": "1.0.0",
-  "description": "discord bot",
-  "main": "index.js",
+  "description": "An example application - make sure to configure this yourself.",
+  "main": "bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node deploy-commands.js && node bot.js"
   },
-  "author": "hilo",
+  "author": "Pebblehost",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.14.1"
-  }
+    "discord.js": "^14.14.1",
+    "mysql": "^2.18.1"
+  },
+  "nodeVersion": "16.17.0"
 }
