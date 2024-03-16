@@ -28,7 +28,6 @@ module.exports = {
                 return;
             }
             
-            console.log(result);
             let starsText = "";
             result.forEach(element => {
                 starsText += `${element.user_name} - ${element.goldstars_count}\n`
