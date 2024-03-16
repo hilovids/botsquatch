@@ -9,7 +9,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('seachart_move')
 		.setDescription('Take your move action on the Sea Chart!')
-        .addStringOption(option => option.setName('seachart_space').setDescription("The space to move to."))
+        .addStringOption(option => option.setName('seachart_space').setDescription("The space to move to.").setRequired(true))
         .setDefaultMemberPermissions(0),
 	async execute(interaction) {
         const discordUser = interaction.user;

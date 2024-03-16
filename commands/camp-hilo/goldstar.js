@@ -7,7 +7,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('goldstar')
 		.setDescription('Assign a gold star to a camper!')
-        .addUserOption(option => option.setName('user').setDescription("The camper getting the gold star."))
+        .addUserOption(option => option.setName('user').setDescription("The camper getting the gold star.").setRequired(true))
         .setDefaultMemberPermissions(0),
 	async execute(interaction) {
         const discordUser = interaction.options.getUser("user");
