@@ -8,7 +8,6 @@ module.exports = {
 		.setName('seestars')
 		.setDescription('See how many gold stars everyone has!'),
 	async execute(interaction) {
-        const discordUser = interaction.options.getUser("user");
 
         const connection = mysql.createConnection({
             host: mySql_host,
@@ -32,7 +31,6 @@ module.exports = {
             result.forEach(element => {
                 starsText += `${element.user_name} - ${element.goldstars_count}\n`
             });
-            const stars = result;
 
             const exampleEmbed = new EmbedBuilder()
             .setColor(0xFEB316)
