@@ -163,7 +163,7 @@ function getGriddy(space) {
         }
       grid += '\n';
     }
-    grid +=`You are currently on ${space}. Columns are [A-J] and Rows are [0-9].`
+    grid +=`You are currently on ${space}.`
     return grid;
   }
 
