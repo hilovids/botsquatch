@@ -5,10 +5,8 @@ const mysql = require('mysql');
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('goldstar')
-		.setDescription('Assign a gold star to a camper!')
-        .addUserOption(option => option.setName('user').setDescription("The camper getting the gold star."))
-        .setDefaultMemberPermissions(0),
+		.setName('seestars')
+		.setDescription('See how many gold stars everyone has!'),
 	async execute(interaction) {
         const discordUser = interaction.options.getUser("user");
 
@@ -19,24 +17,9 @@ module.exports = {
             password: mySql_password,
             database: mySql_database
         });
-          
-        const updateQuery = `
-            INSERT INTO camp_hilo (user_id, user_name, goldstars_count)
-            VALUES (${discordUser.id}, "${discordUser.username}", 1)
-            ON DUPLICATE KEY UPDATE 
-                goldstars_count = goldstars_count + 1,
-                user_name = "${discordUser.username}";
-        `;
-
-        connection.query(updateQuery, async (err, result) => {
-            if (err) {
-                console.error('Error executing query:', err);
-                return;
-            }
-        });
 
         const getQuery = `
-            SELECT goldstars_count FROM camp_hilo WHERE user_id = ${discordUser.id}
+            SELECT * FROM camp_hilo ORDER BY goldstars_count;
         `;
 
         connection.query(getQuery, async (err, result) => {
@@ -44,17 +27,22 @@ module.exports = {
                 console.error('Error executing query:', err);
                 return;
             }
-
-            const stars = result[0].goldstars_count;
+            
+            console.log(result);
+            let starsText = "";
+            result.forEach(element => {
+                starsText += `${element.user_name} - ${element.goldstars_count}\n`
+            });
+            const stars = result;
 
             const exampleEmbed = new EmbedBuilder()
             .setColor(0xFEB316)
-            .setTitle(`${discordUser.username} gets a Gold Star!`)
+            .setTitle(`The Star Count`)
             .setURL('https://hilovids.github.io/camp-hilo/index.html')
-            .setDescription(`Wow! Congrats! You now have... ${stars} in total.`)
+            .setDescription(`${starsText}`)
             .setThumbnail('https://imgur.com/mfc6IFp.png')
             .setTimestamp()
-            await interaction.reply({ embeds: [exampleEmbed] });
+            await interaction.channel.send({ embeds: [exampleEmbed] });
         });
 
         connection.end();

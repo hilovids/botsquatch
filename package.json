@@ -9,7 +9,8 @@
   "author": "Pebblehost",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "discord.js": "^14.14.1",
+    "mysql": "^2.18.1"
   },
   "nodeVersion": "16.17.0"
 }
