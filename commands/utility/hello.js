@@ -11,9 +11,9 @@ module.exports = {
         .addStringOption(option => option.setName('seachart_space').setDescription("Where you'd like your boat to start")).setRequired(true)
         .setDefaultMemberPermissions(0),
 	async execute(interaction) {
-        const discordUser = interaction.options.getUser("user");
+        const discordUser = interaction.user;
         const preferredName = interaction.options.getString("preferred_name");
-        const seachartSpace = interaction.options.getUser("seachart_space");
+        const seachartSpace = interaction.options.getString("seachart_space");
 
         const connection = mysql.createConnection({
             host: mySql_host,
