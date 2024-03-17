@@ -22,9 +22,8 @@ function getUser(connection, discordUser){
 
 function updateInfo(connection, discordUser, space){
     return new Promise((resolve, reject)=>{
+        console.log("Posting MySQL Entry - sc_move");
         const time = Date.now().toString();
-        console.log(time);
-        console.log(space);
         const updateQuery = `
             INSERT INTO camp_hilo (user_id, seachart_loc, seachart_move)
             VALUES (${discordUser.id}, "${space}", ${time})
@@ -32,7 +31,6 @@ function updateInfo(connection, discordUser, space){
                 seachart_loc = "${space}",
                 seachart_move = "${time}";
         `;
-        console.log(space);
         connection.query(updateQuery,  (error, results)=>{
             if(error){
                 console.log(error);
@@ -43,36 +41,54 @@ function updateInfo(connection, discordUser, space){
     });
 };
 
-async function PostInfoToRest(id, name, space){
-    let optionsDelete = { 
-        method: 'DELETE',
-        url: `${restdb_url}/*?q={"preferred_name": "${name}"}`,
-        headers: { 
-            'cache-control': 'no-cache',
-            'x-apikey': 'e144ad2151c6cdbdd722067cf3366f8f4c518',
-            'content-type': 'application/json' 
-        } 
-    };
-  
-    request(optionsDelete, function (error, response, body) {
-        if (error) throw new Error(error);
-        console.log(error);
-    });    
+function DeleteValuesInRest(name) {
+    return new Promise((resolve, reject) => {
+        let optionsDelete = {
+            method: 'DELETE',
+            url: `${restdb_url}/*?q={"preferred_name": "${name}"}`,
+            headers: {
+                'cache-control': 'no-cache',
+                'x-apikey': 'e144ad2151c6cdbdd722067cf3366f8f4c518',
+                'content-type': 'application/json'
+            }
+        };
 
-    let options = { 
-        method: 'POST',
-        url: restdb_url,
-        headers: 
-        {   'cache-control': 'no-cache',
-            'x-apikey': restdb_apikey,
-            'content-type': 'application/json' },
-        body: {discordId: id, preferred_name: name, seachart_loc: space},
-        json: true 
-    };
+        request(optionsDelete, function (error, response, body) {
+            if (error){
+                console.log(error);
+                reject(error);
+            }
+            else {
+                console.log("Deleting RestDb Entries - sc_move");
+                resolve(body)
+            }
+        });
+    });
+}
 
-    console.log("here");
-    request(options, function (error, response, body) {
-        if (error) console.log(error);
+function PostInfoToRest(id, name, space) {
+    return new Promise((resolve, reject) => {
+        let options = {
+            method: 'POST',
+            url: restdb_url,
+            headers:
+            {
+                'cache-control': 'no-cache',
+                'x-apikey': restdb_apikey,
+                'content-type': 'application/json'
+            },
+            body: { discordId: id, preferred_name: name, seachart_loc: space },
+            json: true
+        };
+
+        request(options, function (error, response, body) {
+            if (error) {
+                console.log(error);
+                reject(error);
+            }
+            console.log("Posting RestDb Entry - sc_move");
+            resolve(body);
+        });
     });
 }
 
@@ -156,7 +172,7 @@ module.exports = {
         }
 
         await updateInfo(connection, discordUser, seachartSpace);
-        
+        await DeleteValuesInRest(userData.preferred_name)
         await PostInfoToRest(discordUser.id, userData.preferred_name, seachartSpace);
 
         const exampleEmbed = new EmbedBuilder()
