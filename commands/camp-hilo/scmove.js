@@ -46,7 +46,7 @@ function updateInfo(connection, discordUser, space){
 async function PostInfoToRest(id, name, space){
     let optionsDelete = { 
         method: 'DELETE',
-        url: `https://hiloshallow-5fe3.restdb.io/rest/seachart/*?q={"preferred_name": "${name}"}`,
+        url: `${restdb_url}/*?q={"preferred_name": "${name}"}`,
         headers: { 
             'cache-control': 'no-cache',
             'x-apikey': 'e144ad2151c6cdbdd722067cf3366f8f4c518',
