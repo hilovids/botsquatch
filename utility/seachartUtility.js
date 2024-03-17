@@ -10,7 +10,7 @@ function hasSundayPassedSince(datetimeInt) {
     const dayOfWeek = datetime.getDay();
 
     const millisecondsInDay = 1000 * 60 * 60 * 24;
-    const daysUntilNextSunday = (7 - dayOfWeek) % 7;
+    const daysUntilNextSunday = (7 - dayOfWeek);
     const millisecondsUntilNextSunday = daysUntilNextSunday * millisecondsInDay;
   
     // Calculate the datetime of the next Sunday
