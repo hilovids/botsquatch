@@ -1,8 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { EmbedBuilder } = require('discord.js');
 const mysql = require('mysql');
-const { mySql_host, mySql_password, mySql_port, mySql_user, mySql_database} = require('../../config.json');
+const { mySql_host, mySql_password, mySql_port, mySql_user, mySql_database, restdb_url, restdb_apikey} = require('../../config.json');
 const { hasSundayPassedSince, isValidGridSpace, distanceBetweenSpaces } = require("../../utility/seachartUtility.js");
+var request = require("request");
 
 function getUser(connection, discordUser){
     return new Promise((resolve, reject)=>{
@@ -41,6 +42,23 @@ function updateInfo(connection, discordUser, space){
         });
     });
 };
+
+async function PostInfoToRest(id, name, space){
+    var options = { 
+        method: 'POST',
+        url: restdb_url,
+        headers: 
+        {   'cache-control': 'no-cache',
+            'x-apikey': restdb_apikey,
+            'content-type': 'application/json' },
+        body: {discordId: id, preferred_name: name, seachart_loc: space},
+        json: true 
+    };
+    console.log("here");
+    request(options, function (error, response, body) {
+        if (error) console.log(error);
+    });
+}
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -122,6 +140,7 @@ module.exports = {
         }
 
         await updateInfo(connection, discordUser, seachartSpace);
+        //await PostInfoToRest(discordUser.id, userData.preferred_name, seachartSpace);
 
         const exampleEmbed = new EmbedBuilder()
         .setColor(0x003280)
