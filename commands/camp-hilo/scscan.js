@@ -13,7 +13,7 @@ function getUser(connection, discordUser){
             if(error){
                 return reject(error);
             }
-            // console.log(results);
+            console.log("Getting MySQL Entry - sc_scan");
             return resolve(results);
         });
     });

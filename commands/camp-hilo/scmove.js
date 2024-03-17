@@ -14,7 +14,7 @@ function getUser(connection, discordUser){
             if(error){
                 return reject(error);
             }
-            // console.log(results);
+            console.log("Getting MySQL Entry - sc_move");
             return resolve(results);
         });
     });
@@ -36,6 +36,7 @@ function updateInfo(connection, discordUser, space){
                 console.log(error);
                 return reject(error);
             }
+            console.log("Updating MySQL Entry - sc_move");
             return resolve(results);
         });
     });
@@ -56,11 +57,11 @@ function DeleteValuesInRest(name) {
         request(optionsDelete, function (error, response, body) {
             if (error){
                 console.log(error);
-                reject(error);
+                return reject(error);
             }
             else {
                 console.log("Deleting RestDb Entries - sc_move");
-                resolve(body)
+                return resolve(body)
             }
         });
     });

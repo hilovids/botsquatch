@@ -13,7 +13,7 @@ function getUser(connection, discordUser){
             if(error){
                 return reject(error);
             }
-            // console.log(results);
+            console.log("Getting MySQL Entry - sc_dredge");
             return resolve(results);
         });
     });
@@ -33,6 +33,7 @@ function updateInfo(connection, discordUser){
                 console.log(error);
                 return reject(error);
             }
+            console.log("Updating MySQL Entry - sc_dredge");
             return resolve(results);
         });
     });

@@ -12,7 +12,7 @@ getUsers = (connection) => {
             if(error){
                 return reject(error);
             }
-            // console.log(results);
+            console.log("Getting MySQL Entries - sc_hello");
             return resolve(results);
         });
     });

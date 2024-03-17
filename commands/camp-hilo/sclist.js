@@ -13,7 +13,7 @@ function getUser(connection){
             if(error){
                 return reject(error);
             }
-            // console.log(results);
+            console.log("Getting MySQL Entries - sc_list");
             return resolve(results);
         });
     });

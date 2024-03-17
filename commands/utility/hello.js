@@ -13,7 +13,7 @@ getUser = (connection, discordUser) => {
             if(error){
                 return reject(error);
             }
-            // console.log(results);
+            console.log("Getting MySQL Entry - sc_hello");
             return resolve(results);
         });
     });
@@ -33,6 +33,7 @@ updateInfo = (connection, discordUser, preferredName, seachartSpace) => {
             if(error){
                 return reject(error);
             }
+            console.log("Updating/Creating MySQL Entry - sc_hello");
             return resolve(results);
         });
     });

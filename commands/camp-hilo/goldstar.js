@@ -12,7 +12,7 @@ function getUser(connection, discordUser){
             if(error){
                 return reject(error);
             }
-            // console.log(results);
+            console.log("Getting MySQL Entry - goldstar");
             return resolve(results);
         });
     });
@@ -30,6 +30,7 @@ function updateInfo(connection, discordUser){
             if(error){
                 return reject(error);
             }
+            console.log("Updating MySQL Entries - goldstar");
             return resolve(results);
         });
     });
