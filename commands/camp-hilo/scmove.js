@@ -44,7 +44,22 @@ function updateInfo(connection, discordUser, space){
 };
 
 async function PostInfoToRest(id, name, space){
-    var options = { 
+    let optionsDelete = { 
+        method: 'DELETE',
+        url: `https://hiloshallow-5fe3.restdb.io/rest/seachart/*?q={"preferred_name": "${name}"}`,
+        headers: { 
+            'cache-control': 'no-cache',
+            'x-apikey': 'e144ad2151c6cdbdd722067cf3366f8f4c518',
+            'content-type': 'application/json' 
+        } 
+    };
+  
+    request(optionsDelete, function (error, response, body) {
+        if (error) throw new Error(error);
+        console.log(error);
+    });    
+
+    let options = { 
         method: 'POST',
         url: restdb_url,
         headers: 
@@ -54,6 +69,7 @@ async function PostInfoToRest(id, name, space){
         body: {discordId: id, preferred_name: name, seachart_loc: space},
         json: true 
     };
+
     console.log("here");
     request(options, function (error, response, body) {
         if (error) console.log(error);
@@ -140,7 +156,8 @@ module.exports = {
         }
 
         await updateInfo(connection, discordUser, seachartSpace);
-        //await PostInfoToRest(discordUser.id, userData.preferred_name, seachartSpace);
+        
+        await PostInfoToRest(discordUser.id, userData.preferred_name, seachartSpace);
 
         const exampleEmbed = new EmbedBuilder()
         .setColor(0x003280)
@@ -153,4 +170,6 @@ module.exports = {
         connection.end();
     }
 };
+
+
 
