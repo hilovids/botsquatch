@@ -1,11 +1,11 @@
 const { seachart_hits } = require('../config.json');
 
 
-function hasSundayPassedSince(datetimeString) {
+function hasSundayPassedSince(datetimeInt) {
     
-    if(datetimeString == null) return true;
+    if(datetimeInt == null) return true;
 
-    const datetime = new Date(datetimeString);
+    const datetime = new Date(datetimeInt);
   
     const dayOfWeek = datetime.getDay();
 
@@ -15,7 +15,7 @@ function hasSundayPassedSince(datetimeString) {
   
     // Calculate the datetime of the next Sunday
     const nextSunday = new Date(datetime.getTime() + millisecondsUntilNextSunday);
-
+    nextSunday.setUTCHours(0,0,0,0)
     return nextSunday < new Date();
 }
 
