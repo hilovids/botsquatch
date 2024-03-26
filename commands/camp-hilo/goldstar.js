@@ -53,11 +53,25 @@ module.exports = {
             database: mySql_database
         });
         
-        // Adds user if they do not exist
-        const updateResponse = await updateInfo(connection, discordUser);
-
         const getResponse = await getUser(connection, discordUser);
-        const stars = getResponse[0].goldstars_count;
+        const userData = getResponse[0];
+
+        if(userData == undefined){
+            const exampleEmbed = new EmbedBuilder()
+            .setColor(0x003280)
+            .setTitle(`That user isn't in the system! `)
+            .setURL('https://hilovids.github.io/camp-hilo/index.html')
+            .setDescription(`Ask them to wave using the /hello command.`)
+            .setThumbnail('https://imgur.com/mfc6IFp.png')
+            .setTimestamp()
+            await interaction.reply({ embeds: [exampleEmbed] });
+            connection.end();
+            return;
+        }
+
+        // Adds user if they do not exist
+        await updateInfo(connection, discordUser);
+        const stars = userData.goldstars_count + 1;
 
         const exampleEmbed = new EmbedBuilder()
         .setColor(0xFEB316)
