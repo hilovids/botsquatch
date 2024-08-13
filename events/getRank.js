@@ -5,7 +5,6 @@ const { Events, Client, EmbedBuilder } = require('discord.js');
 let formattedString = "";
 
 async function PostEmbed(data, client){
-	console.log("Running embed function...");
 	var tempString = `Brooks is currently ${data.tier} ${data.rank}, ${data.leaguePoints}LP\n${data.wins}W - ${data.losses}L`
 	if(formattedString != tempString){
 		formattedString = tempString;
@@ -72,6 +71,9 @@ async function PostEmbed(data, client){
 		} else {
 			console.error('Guild not found.');
 		}
+	}
+	else {
+		console.log("No changes...");
 	}
 }
 
