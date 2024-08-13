@@ -1,5 +1,5 @@
 const { getRankedData } = require("../utility/leagueUtility.js");
-const { league_channelId } = require('../config.json');
+const { league_channelId, league_serverId } = require('../config.json');
 const { Events, Client, EmbedBuilder } = require('discord.js');
 
 let formattedString = "";
@@ -56,6 +56,21 @@ async function PostEmbed(data, client){
 			channel.send({ embeds: [embed] })
             .then(() => console.log('Embed sent successfully!'))
             .catch(error => console.error('Error sending embed:', error));
+		}
+
+		const guildId = league_serverId;
+		const guild = client.guilds.cache.get(guildId);
+
+		if (guild) {
+			try {
+				const newName = `${data.tier} ${data.rank}, ${data.leaguePoints}LP`;
+				await guild.setName(newName);
+				console.log(`Server name changed to: ${guild.name}`);
+			} catch (error) {
+				console.error('Error changing server name:', error);
+			}
+		} else {
+			console.error('Guild not found.');
 		}
 	}
 }
