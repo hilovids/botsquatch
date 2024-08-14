@@ -130,6 +130,6 @@ module.exports = {
 	once: true,
 	async execute(client) {
 		const data = await getRankedData();
-		setInterval(async () => {return await PostEmbed(data, client)}, 5 * 3 * 1000);
+		setInterval(async () => {return await PostEmbed(data, client)}, 5 * 60 * 1000);
 	},
 };
