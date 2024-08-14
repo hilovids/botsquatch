@@ -1,15 +1,27 @@
 const { getRankedData } = require("../utility/leagueUtility.js");
 const { league_channelId, league_serverId } = require('../config.json');
-const { Events, Client, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
+const { mySql_host, mySql_password, mySql_port, mySql_user, mySql_database} = require('../config.json');
+const { Events, EmbedBuilder } = require('discord.js');
+const mysql = require('mysql');
 
 async function PostEmbed(data, client){
 	let gamesPlayed = data.wins + data.losses;
-	let gameData = loadSavedData();
+
+	const connection = mysql.createConnection({
+		host: mySql_host,
+		port: mySql_port,
+		user: mySql_user,
+		password: mySql_password,
+		database: mySql_database
+	});
+
+	let gameData = await loadSavedData(connection);
+
 	console.log("New: ", gamesPlayed);
-	console.log("Old: ", gameData.gamesPlayed);
-	if(gamesPlayed != gameData.gamesPlayed){
-		saveData(gamesPlayed);
+	console.log("Old: ", gameData[0].goldstars_count);
+
+	if(gamesPlayed != gameData[0].goldstars_count){
+		await saveData(connection, gamesPlayed);
 		let formattedString = `Brooks is currently ${data.tier} ${data.rank}, ${data.leaguePoints}LP\n${data.wins}W - ${data.losses}L`
 		let color = 0xDBB02A;
 		let thumb = "";
@@ -74,20 +86,43 @@ async function PostEmbed(data, client){
 		} else {
 			console.error('Guild not found.');
 		}
+	} 
+	else {
+		console.log("No change...");
 	}
 }
 
-function loadSavedData() {
-    if (fs.existsSync('../data.json')) {
-        const rawData = fs.readFileSync('../data.json');
-        return JSON.parse(rawData);
-    }
-    return { gamesPlayed: 0 };
+function loadSavedData(connection) {
+    return new Promise((resolve, reject)=>{
+        const getQuery = `
+            SELECT * FROM camp_hilo WHERE user_id = "brooks"
+        `;
+        connection.query(getQuery,  (error, results)=>{
+            if(error){
+                return reject(error);
+            }
+            console.log("Getting MySQL Entry - goldstar");
+            return resolve(results);
+        });
+    });
 }
 
-function saveData(gamesPlayed) {
-    const data = { gamesPlayed };
-    fs.writeFileSync('../data.json', JSON.stringify(data));
+function saveData(connection, gamesPlayed) {
+    return new Promise((resolve, reject)=>{
+        const updateQuery = `
+            INSERT INTO camp_hilo (user_id, goldstars_count)
+            VALUES ("brooks", 0)
+            ON DUPLICATE KEY UPDATE 
+                goldstars_count = ${gamesPlayed};
+        `;
+        connection.query(updateQuery,  (error, results)=>{
+            if(error){
+                return reject(error);
+            }
+            console.log("Updating MySQL Entries - goldstar");
+            return resolve(results);
+        });
+    });
 }
 
 module.exports = {
@@ -95,6 +130,6 @@ module.exports = {
 	once: true,
 	async execute(client) {
 		const data = await getRankedData();
-		setInterval(async () => {return await PostEmbed(data, client)}, 5 * 60 * 1000);
+		setInterval(async () => {return await PostEmbed(data, client)}, 5 * 3 * 1000);
 	},
 };
