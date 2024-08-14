@@ -1,20 +1,23 @@
 const { getRankedData } = require("../utility/leagueUtility.js");
 const { league_channelId, league_serverId } = require('../config.json');
 const { Events, Client, EmbedBuilder } = require('discord.js');
-
-let formattedString = "";
+const fs = require('fs');
 
 async function PostEmbed(data, client){
-	var tempString = `Brooks is currently ${data.tier} ${data.rank}, ${data.leaguePoints}LP\n${data.wins}W - ${data.losses}L`
-	if(formattedString != tempString){
-		formattedString = tempString;
+	let gamesPlayed = data.wins + data.losses;
+	let gameData = loadSavedData();
+	console.log("New: ", gamesPlayed);
+	console.log("Old: ", gameData.gamesPlayed);
+	if(gamesPlayed != gameData.gamesPlayed){
+		saveData(gamesPlayed);
+		let formattedString = `Brooks is currently ${data.tier} ${data.rank}, ${data.leaguePoints}LP\n${data.wins}W - ${data.losses}L`
 		let color = 0xDBB02A;
 		let thumb = "";
 		switch(data.tier) {
 			case "IRON":
-			  color = 0x8B7762;
-			  thumb = "https://imgur.com/TqvtOjA.png";
-			  break;
+				color = 0x8B7762;
+				thumb = "https://imgur.com/TqvtOjA.png";
+				break;
 			case "BRONZE":
 				color = 0xA56522;
 				thumb = "https://imgur.com/XPRdSxb.png";
@@ -39,27 +42,27 @@ async function PostEmbed(data, client){
 				color = 0xDBB02A;
 				thumb = "";
 				break;
-		  }
-
+			}
+	
 		const embed = new EmbedBuilder()
 		.setColor(color)
 		.setTitle("Brooks played league today!")
 		.setDescription(formattedString)
 		.setThumbnail(thumb)
 		.setTimestamp()
-
+	
 		const channelId = league_channelId;
 		const channel = client.channels.cache.get(channelId);
-
+		
 		if(channel){
 			channel.send({ embeds: [embed] })
-            .then(() => console.log('Embed sent successfully!'))
-            .catch(error => console.error('Error sending embed:', error));
+			.then(() => console.log('Embed sent successfully!'))
+			.catch(error => console.error('Error sending embed:', error));
 		}
-
+	
 		const guildId = league_serverId;
 		const guild = client.guilds.cache.get(guildId);
-
+	
 		if (guild) {
 			try {
 				const newName = `${data.tier} ${data.rank}, ${data.leaguePoints}LP`;
@@ -72,9 +75,19 @@ async function PostEmbed(data, client){
 			console.error('Guild not found.');
 		}
 	}
-	else {
-		console.log("No changes...");
-	}
+}
+
+function loadSavedData() {
+    if (fs.existsSync('../data.json')) {
+        const rawData = fs.readFileSync('../data.json');
+        return JSON.parse(rawData);
+    }
+    return { gamesPlayed: 0 };
+}
+
+function saveData(gamesPlayed) {
+    const data = { gamesPlayed };
+    fs.writeFileSync('../data.json', JSON.stringify(data));
 }
 
 module.exports = {
@@ -82,6 +95,6 @@ module.exports = {
 	once: true,
 	async execute(client) {
 		const data = await getRankedData();
-		setInterval(async () => {return await PostEmbed(data, client)}, 60 * 1000);
+		setInterval(async () => {return await PostEmbed(data, client)}, 5 * 60 * 1000);
 	},
 };
