@@ -8,7 +8,11 @@ async function getRankedData() {
         const summonerId = response.data.id;
 
         const rankedUrl = `https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}?api_key=${league_api}`;
-        const rankedResponse = await axios.get(rankedUrl);
+        const rankedResponse = await axios.get(rankedUrl, {
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
         const data = rankedResponse.data;
 
         // console.log('Ranked Data:', data[0]);

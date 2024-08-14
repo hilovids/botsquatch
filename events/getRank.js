@@ -17,12 +17,13 @@ async function PostEmbed(data, client){
 
 	let gameData = await loadSavedData(connection);
 
+	console.log(data);
 	console.log("New: ", gamesPlayed);
 	console.log("Old: ", gameData[0].goldstars_count);
 
 	if(gamesPlayed != gameData[0].goldstars_count){
 		await saveData(connection, gamesPlayed);
-		let formattedString = `Brooks is currently ${data.tier} ${data.rank}, ${data.leaguePoints}LP\n${data.wins}W - ${data.losses}L`
+		let formattedString = `Brooks is currently ${data.tier} ${data.rank}, ${data.leaguePoints}LP\n${data.wins}W - ${data.losses}L\n${data.hotStreak ? "He's on a hot streak!" : ""}`
 		let color = 0xDBB02A;
 		let thumb = "";
 		switch(data.tier) {
@@ -130,6 +131,6 @@ module.exports = {
 	once: true,
 	async execute(client) {
 		const data = await getRankedData();
-		setInterval(async () => {return await PostEmbed(data, client)}, 5 * 60 * 1000);
+		setInterval(async () => {return await PostEmbed(data, client)}, 15 * 1000);
 	},
 };
