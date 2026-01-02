@@ -36,8 +36,11 @@ module.exports = {
 						}
 
 						if (cid.startsWith('alliance_invite_decline:')) {
-							// disable buttons on original message
-							try { if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {}); } catch (e) {}
+							// disable buttons on original message and delete it
+							try {
+								if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {});
+								if (interaction.message && interaction.message.deletable) await interaction.message.delete().catch(() => {});
+							} catch (e) {}
 							await interaction.editReply({ content: 'You declined the invite.', ephemeral: true });
 							return;
 						}
@@ -50,7 +53,10 @@ module.exports = {
 							}
 						} catch (e) { console.error('alliance accept permission error', e); }
 
-						try { if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {}); } catch (e) {}
+						try {
+							if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {});
+							if (interaction.message && interaction.message.deletable) await interaction.message.delete().catch(() => {});
+						} catch (e) {}
 						await interaction.editReply({ content: 'You joined the alliance.', ephemeral: true });
 						return;
 					} catch (err) {
