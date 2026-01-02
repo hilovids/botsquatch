@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
+const { ObjectId } = require('mongodb');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -37,21 +38,27 @@ module.exports = {
                 const target = await campersCol.findOne({ discordId: targetUser.id, eliminated: { $ne: true } });
                 if (!target) return await interaction.editReply({ content: 'Target is not a valid camper or is eliminated.', ephemeral: true });
 
-                // ensure inviter can view the channel
+                // ensure inviter can view the channel and is not eliminated
                 const perms = channel.permissionsFor(interaction.user);
                 if (!perms || !perms.has(PermissionFlagsBits.ViewChannel)) return await interaction.editReply({ content: 'You are not a member of this alliance.', ephemeral: true });
+                if (member.eliminated) return await interaction.editReply({ content: 'Eliminated campers cannot send invites.', ephemeral: true });
 
-                const ts = String(Date.now());
-                const acceptId = `alliance_invite_accept:${channelId}:${targetUser.id}:${interaction.user.id}:${ts}`;
-                const declineId = `alliance_invite_decline:${channelId}:${targetUser.id}:${interaction.user.id}:${ts}`;
+                // find alliance record in DB
+                const alliance = await alliances.findOne({ channelId, guildId: interaction.guild.id, active: true });
+                if (!alliance) return await interaction.editReply({ content: 'This channel is not a managed alliance.', ephemeral: true });
+
+                const inviteObj = { _id: new ObjectId(), discordId: targetUser.id, inviterId: interaction.user.id, message: `You are invited to join alliance ${alliance.name}`, createdAt: new Date(), expiresAt: new Date(Date.now() + (24 * 60 * 60 * 1000)), status: 'pending' };
+                await alliances.updateOne({ _id: alliance._id }, { $push: { invites: inviteObj } });
 
                 const inviteEmbed = new EmbedBuilder()
-                    .setTitle(`Alliance Invite: ${channel.name}`)
-                    .setDescription(`You are invited to join ${channel.name}`)
+                    .setTitle(`Alliance Invite: ${alliance.name}`)
+                    .setDescription(inviteObj.message)
                     .addFields({ name: 'Invited By', value: `${interaction.user.username}` })
                     .setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0x00AE86)
                     .setTimestamp();
 
+                const acceptId = `alliance_invite_accept:${String(alliance._id)}:${inviteObj._id}`;
+                const declineId = `alliance_invite_decline:${String(alliance._id)}:${inviteObj._id}`;
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId(acceptId).setLabel('Accept').setStyle(ButtonStyle.Success),
                     new ButtonBuilder().setCustomId(declineId).setLabel('Decline').setStyle(ButtonStyle.Danger)
@@ -75,19 +82,32 @@ module.exports = {
                 const perms = channel.permissionsFor(interaction.user);
                 if (!perms || !perms.has(PermissionFlagsBits.ViewChannel)) return await interaction.editReply({ content: 'You are not a member of this alliance.', ephemeral: true });
 
-                // remove user's overwrite
+                // remove from alliance members in DB and remove user's overwrite
+                const alliance = await alliances.findOne({ channelId, guildId: interaction.guild.id, active: true });
+                if (alliance) {
+                    await alliances.updateOne({ _id: alliance._id }, { $pull: { members: interaction.user.id } });
+                }
                 try { await channel.permissionOverwrites.delete(interaction.user.id).catch(() => {}); } catch (e) { }
 
-                // if no non-bot members remain with view access, delete channel
+                // if no non-bot members remain with view access, archive alliance and delete channel
+                let shouldDeleteChannel = false;
                 try {
                     await channel.fetch();
                     const humanMembers = channel.members.filter(m => !m.user.bot);
                     if (!humanMembers || humanMembers.size === 0) {
-                        await channel.delete().catch(() => {});
+                        shouldDeleteChannel = true;
+                        if (alliance) await alliances.updateOne({ _id: alliance._id }, { $set: { active: false, closedAt: new Date() } });
                     }
                 } catch (e) {}
 
+                // reply to the interaction before attempting to delete the channel (deleting the channel invalidates the original interaction message)
                 await interaction.editReply({ content: 'You left the alliance.', ephemeral: true });
+
+                if (shouldDeleteChannel) {
+                    // delete channel in background
+                    channel.delete().catch(() => {});
+                }
+
                 return;
             }
 

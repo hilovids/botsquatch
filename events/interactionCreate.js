@@ -12,51 +12,57 @@ module.exports = {
 			// Vote button: customId => "vote:<camperId>"
 			if (interaction.isButton()) {
 				const cid = interaction.customId || '';
-				// Alliance invite accept/decline: alliance_invite_accept:<channelId>:<recipientId>:<inviterId>:<ts>
+				// Alliance invite accept/decline: alliance_invite_accept:<allianceId>:<inviteId>
 				if (cid.startsWith('alliance_invite_accept:') || cid.startsWith('alliance_invite_decline:')) {
 					await interaction.deferReply({ ephemeral: true });
 					try {
 						const parts = cid.split(':');
 						const action = parts[0];
-						const channelId = parts[1];
-						const recipientId = parts[2];
-						const inviterId = parts[3];
-						const ts = Number(parts[4] || '0');
-						const now = Date.now();
-						const ttl = 24 * 60 * 60 * 1000; // 24h
-
-						if (String(recipientId) !== String(interaction.user.id)) {
+						const allianceId = parts[1];
+						const inviteId = parts[2];
+						const db = await connectToMongo();
+						const alliances = db.collection('alliances');
+						const campersCol = db.collection('campers');
+						let alliance = null;
+						try { alliance = await alliances.findOne({ _id: new ObjectId(allianceId) }); } catch (e) { alliance = null; }
+						if (!alliance) {
+							await interaction.editReply({ content: 'That alliance could not be found.', ephemeral: true });
+							return;
+						}
+						const invite = (alliance.invites || []).find(i => String(i._id) === String(inviteId));
+						if (!invite) {
+							await interaction.editReply({ content: 'That invite was not found or has expired.', ephemeral: true });
+							return;
+						}
+						if (String(invite.discordId) !== String(interaction.user.id)) {
 							await interaction.editReply({ content: 'You are not the recipient of this invite.', ephemeral: true });
 							return;
 						}
-
-						if (ts <= 0 || (ts + ttl) < now) {
+						if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+							// mark expired
+							await alliances.updateOne({ _id: alliance._id, 'invites._id': invite._id }, { $set: { 'invites.$.status': 'expired' } });
 							await interaction.editReply({ content: 'This invite has expired.', ephemeral: true });
 							return;
 						}
-
 						if (cid.startsWith('alliance_invite_decline:')) {
+							await alliances.updateOne({ _id: alliance._id, 'invites._id': invite._id }, { $set: { 'invites.$.status': 'declined', 'invites.$.respondedAt': new Date() } });
 							// disable buttons on original message and delete it
-							try {
-								if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {});
-								if (interaction.message && interaction.message.deletable) await interaction.message.delete().catch(() => {});
-							} catch (e) {}
+							try { if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {}); } catch (e) {}
+							try { if (interaction.message && interaction.message.deletable) await interaction.message.delete().catch(() => {}); } catch (e) {}
 							await interaction.editReply({ content: 'You declined the invite.', ephemeral: true });
 							return;
 						}
-
-						// accept: give permissions in the alliance channel
+						// accept
+						// add member and update invite
+						await alliances.updateOne({ _id: alliance._id }, { $addToSet: { members: interaction.user.id } });
+						await alliances.updateOne({ _id: alliance._id, 'invites._id': invite._id }, { $set: { 'invites.$.status': 'accepted', 'invites.$.respondedAt': new Date() } });
+						// update channel permissions
 						try {
-							const chan = await interaction.client.channels.fetch(channelId).catch(() => null);
-							if (chan) {
-								await chan.permissionOverwrites.edit(interaction.user.id, { ViewChannel: true, SendMessages: true }).catch(() => {});
-							}
+							const chan = await interaction.client.channels.fetch(alliance.channelId).catch(() => null);
+							if (chan) await chan.permissionOverwrites.edit(interaction.user.id, { ViewChannel: true, SendMessages: true }).catch(() => {});
 						} catch (e) { console.error('alliance accept permission error', e); }
-
-						try {
-							if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {});
-							if (interaction.message && interaction.message.deletable) await interaction.message.delete().catch(() => {});
-						} catch (e) {}
+						try { if (interaction.message && Array.isArray(interaction.message.components)) await interaction.message.edit({ components: interaction.message.components.map(r => ({ components: r.components.map(c => ({ ...c, disabled: true })) })) }).catch(() => {}); } catch (e) {}
+						try { if (interaction.message && interaction.message.deletable) await interaction.message.delete().catch(() => {}); } catch (e) {}
 						await interaction.editReply({ content: 'You joined the alliance.', ephemeral: true });
 						return;
 					} catch (err) {
@@ -179,8 +185,8 @@ module.exports = {
 					await interaction.deferReply({ ephemeral: true });
 					try {
 						const parts = cid.split(':');
-						const allianceChannelId = parts[1];
-						const ownerId = parts[2];
+							const allianceId = parts[1];
+							const ownerId = parts[2];
 						const selected = Array.isArray(interaction.values) ? interaction.values : [];
 						if (!selected || selected.length === 0) {
 							await interaction.editReply({ content: 'No players selected.', ephemeral: true });
@@ -192,22 +198,33 @@ module.exports = {
 						const discordConfigs = db.collection('discordConfigs');
 						const discordConfig = await discordConfigs.findOne({ server_id: interaction.guildId });
 
-						// ensure only owner can use the selector
+						// ensure only owner can use the selector and inviter is not eliminated
 						if (String(ownerId) !== String(interaction.user.id)) {
 							await interaction.editReply({ content: 'Only the alliance owner can invite members using this selector.', ephemeral: true });
 							return;
 						}
 
-						// fetch inviter's camper record to check team
+						// load alliance from DB
+						const alliances = db.collection('alliances');
+						let alliance = null;
+						try { alliance = await alliances.findOne({ _id: new ObjectId(allianceId) }); } catch (e) { alliance = null; }
+						if (!alliance) {
+							await interaction.editReply({ content: 'Alliance not found.', ephemeral: true });
+							return;
+						}
+
 						const inviterCamper = await campersCol.findOne({ discordId: ownerId });
 						if (!inviterCamper) {
 							await interaction.editReply({ content: 'Could not find inviter camper record.', ephemeral: true });
 							return;
 						}
+						if (inviterCamper.eliminated) {
+							await interaction.editReply({ content: 'Eliminated campers cannot send invites.', ephemeral: true });
+							return;
+						}
 
-						const invitesToSend = [];
-						const now = Date.now();
-						const ttl = 24 * 60 * 60 * 1000; // 24 hours
+						const invitesToCreate = [];
+						const ttlMs = 24 * 60 * 60 * 1000; // 24 hours
 
 						for (const uid of selected) {
 							try {
@@ -216,44 +233,46 @@ module.exports = {
 								// enforce same team
 								if (String(camper.team) !== String(inviterCamper.team)) continue;
 
-								const ts = String(now);
-								const acceptId = `alliance_invite_accept:${allianceChannelId}:${uid}:${ownerId}:${ts}`;
-								const declineId = `alliance_invite_decline:${allianceChannelId}:${uid}:${ownerId}:${ts}`;
-
-								invitesToSend.push({ uid, acceptId, declineId, ts });
+								const inviteObj = { _id: new ObjectId(), discordId: uid, inviterId: interaction.user.id, message: (interaction.message && interaction.message.embeds && interaction.message.embeds[0] && interaction.message.embeds[0].description) || '', createdAt: new Date(), expiresAt: new Date(Date.now() + ttlMs), status: 'pending' };
+								invitesToCreate.push(inviteObj);
 							} catch (e) { console.error('alliance select iterate error', e); }
 						}
 
-						if (invitesToSend.length === 0) {
+						if (invitesToCreate.length === 0) {
 							await interaction.editReply({ content: 'No valid players to invite (must be same team and not eliminated).', ephemeral: true });
 							return;
 						}
 
+						// persist invites to alliance doc
+						await alliances.updateOne({ _id: alliance._id }, { $push: { invites: { $each: invitesToCreate } } });
+
 						// send invite embed to each recipient's confessional or DM, pinging them
-						for (const inv of invitesToSend) {
+						for (const inv of invitesToCreate) {
 							try {
-								const recipient = await campersCol.findOne({ discordId: inv.uid }).catch(() => null);
+								const recipient = await campersCol.findOne({ discordId: inv.discordId }).catch(() => null);
 								const inviteEmbed = new EmbedBuilder()
-									.setTitle(`Alliance Invite`)
-									.setDescription((interaction.message && interaction.message.embeds && interaction.message.embeds[0] && interaction.message.embeds[0].description) || '')
+									.setTitle(`Alliance Invite: ${alliance.name}`)
+									.setDescription(inv.message || '')
 									.addFields({ name: 'Invited By', value: `${interaction.user.username}` })
 									.setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0x00AE86)
 									.setTimestamp();
 
+								const acceptId = `alliance_invite_accept:${allianceId}:${inv._id}`;
+								const declineId = `alliance_invite_decline:${allianceId}:${inv._id}`;
+
 								const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 								const row = new ActionRowBuilder().addComponents(
-									new ButtonBuilder().setCustomId(inv.acceptId).setLabel('Accept').setStyle(ButtonStyle.Success),
-									new ButtonBuilder().setCustomId(inv.declineId).setLabel('Decline').setStyle(ButtonStyle.Danger)
+									new ButtonBuilder().setCustomId(acceptId).setLabel('Accept').setStyle(ButtonStyle.Success),
+									new ButtonBuilder().setCustomId(declineId).setLabel('Decline').setStyle(ButtonStyle.Danger)
 								);
 
-								// include a mention to ping
-								const pingContent = `<@${inv.uid}>`;
+								const pingContent = `<@${inv.discordId}>`;
 
 								if (recipient && recipient.confessionalId) {
 									const chan = await interaction.client.channels.fetch(recipient.confessionalId).catch(() => null);
 									if (chan) await chan.send({ content: pingContent, embeds: [inviteEmbed], components: [row] }).catch(() => null);
 								} else {
-									const userObj = await interaction.client.users.fetch(inv.uid).catch(() => null);
+									const userObj = await interaction.client.users.fetch(inv.discordId).catch(() => null);
 									if (userObj) await userObj.send({ content: pingContent, embeds: [inviteEmbed], components: [row] }).catch(() => null);
 								}
 							} catch (e) { console.error('send alliance invite error', e); }
