@@ -85,6 +85,11 @@ module.exports = {
             const eligible = await campersCol.find({ eliminated: { $ne: true }, team: inviter.team, discordId: { $ne: inviter.discordId } }).limit(25).toArray();
             const options = eligible.map(c => ({ label: (c.displayName || c.username || c.discordId).slice(0, 100), value: String(c.discordId) }));
 
+            if (!options || options.length === 0) {
+                await interaction.editReply({ content: `Alliance created: <#${channel.id}>. No eligible players to invite (same team & not eliminated).`, ephemeral: true });
+                return;
+            }
+
             const select = new StringSelectMenuBuilder()
                 .setCustomId(`alliance_invite_select:${allianceId}:${inviter.discordId}`)
                 .setPlaceholder('Select players to invite')
@@ -94,15 +99,30 @@ module.exports = {
 
             const row = new ActionRowBuilder().addComponents(select);
 
-            // send into inviter's confessional channel if available, otherwise reply ephemeral
+            // try to send into inviter's confessional channel first, then DM, then fallback to ephemeral reply
+            let sent = false;
             if (inviter.confessionalId) {
                 const chan = await interaction.client.channels.fetch(inviter.confessionalId).catch(() => null);
                 if (chan) {
-                    await chan.send({ embeds: [inviteEmbed], components: [row] }).catch(() => {});
+                    try { await chan.send({ embeds: [inviteEmbed], components: [row] }); sent = true; } catch (e) { sent = false; }
                 }
             }
 
-            await interaction.editReply({ content: `Alliance created: <#${channel.id}>. Use the selector in your confessional to invite players.`, ephemeral: true });
+            if (!sent) {
+                // try DM
+                try {
+                    const userObj = await interaction.client.users.fetch(interaction.user.id).catch(() => null);
+                    if (userObj) { await userObj.send({ embeds: [inviteEmbed], components: [row] }); sent = true; }
+                } catch (e) { sent = false; }
+            }
+
+            if (!sent) {
+                // final fallback: send ephemeral reply with the selector
+                await interaction.editReply({ content: `Alliance created: <#${channel.id}>. Could not deliver selector to your confessional or DM; here's the selector:`, embeds: [inviteEmbed], components: [row], ephemeral: true });
+                return;
+            }
+
+            await interaction.editReply({ content: `Alliance created: <#${channel.id}>. Use the selector in your confessional (or your DMs) to invite players.`, ephemeral: true });
         } catch (err) {
             console.error('alliance command error', err);
             try { await interaction.editReply({ content: 'There was an error creating the alliance.', ephemeral: true }); } catch (e) {}

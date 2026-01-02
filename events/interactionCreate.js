@@ -292,7 +292,7 @@ module.exports = {
 							}
 						} catch (e) { console.error('disable selector error', e); }
 
-						await interaction.editReply({ content: `Sent ${invitesToSend.length} invite(s).`, ephemeral: true });
+						await interaction.editReply({ content: `Sent ${invitesToCreate.length} invite(s).`, ephemeral: true });
 						return;
 					} catch (err) {
 						console.error('alliance invite select error', err);
