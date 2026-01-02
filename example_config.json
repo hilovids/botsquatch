@@ -1,0 +1,29 @@
+{
+  "_id": {
+    "$oid": "69570e1c389ed06fd44a2602"
+  },
+  "server_id": "1132051722446057526",
+  "campground_id": "1132821294098948208",
+  "bulletin_channel_id": "1132820779059384494",
+  "seance_category_id": "1456747798123909367",
+  "alliance_category_id": "1456768796718268487",
+  "team_a": {
+    "name": "Witless Wolves",
+    "abbreviation": "wolves",
+    "role_id": "1456438143300407306"
+  },
+  "team_b": {
+    "name": "Foolish Ferrets",
+    "abbreviation": "ferrets",
+    "role_id": "1456438016297144352"
+  },
+  "camper_role_id": "1132053532657320009",
+  "spectator_role_id": "1218313052420837519",
+  "production_role_id": "1132053310350831616",
+  "clue_cost": 10,
+  "embed": {
+    "color": "#41FEBA",
+    "thumbnail_url": "https://imgur.com/mfc6IFp.png"
+  },
+  "current_week": 0
+}
