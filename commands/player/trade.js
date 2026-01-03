@@ -12,7 +12,8 @@ module.exports = {
                 { name: 'Seance Token', value: 'seanceTokens' },
                 { name: 'Time Token', value: 'timeTokens' },
                 { name: 'Nothing Token', value: 'nothingTokens' },
-                { name: 'Egg Token', value: 'eggToken' }
+                { name: 'Egg Token', value: 'eggToken' },
+                { name: 'Stars', value: 'stars' }
             ))
         .addIntegerOption(opt => opt.setName('quantity').setDescription('Quantity to give').setRequired(true).setMinValue(1))
         .addUserOption(opt => opt.setName('target').setDescription('Player to receive the item').setRequired(true)),
@@ -87,7 +88,8 @@ module.exports = {
                 seanceTokens: 'Seance Token(s)',
                 timeTokens: 'Time Token(s)',
                 nothingTokens: 'Nothing Token(s)',
-                eggToken: 'Egg Token(s)'
+                eggToken: 'Egg Token(s)',
+                stars: 'star(s)' // Added stars to the item labels
             };
 
             const label = itemLabels[item] || item;
