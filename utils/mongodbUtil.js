@@ -10,8 +10,6 @@ if (!uri) {
 }
 
 const client = new MongoClient(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     tls: true, // Ensure TLS is enabled
     tlsInsecure: false, // Reject invalid certificates
     serverSelectionTimeoutMS: 10000, // Timeout after 10 seconds
