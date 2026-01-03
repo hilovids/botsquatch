@@ -3,8 +3,8 @@ const { connectToMongo } = require('../utils/mongodbUtil');
 const { pickRandomChallenge } = require('../utils/minigameBank');
 
 // how many drops per day (random between these)
-const MIN_DROPS = 2;
-const MAX_DROPS = 5;
+const MIN_DROPS = 4;
+const MAX_DROPS = 8;
 // give players 1 minute to respond (in ms)
 const RESPONSE_TIME_MS = 1 * 60 * 1000;
 
