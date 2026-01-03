@@ -1,0 +1,276 @@
+[
+  {
+    "id": "ghost_boo",
+    "weight": 0.5,
+    "difficulty": 2,
+    "prompt": { "text": "A chill passes over the camp... Shout 'boo' and scare the ghosts away!", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["boo"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The ghost flees! 👻", "onExpire": "The ghost stays put..." }
+  },
+  {
+    "id": "bird_call",
+    "weight": 0.6,
+    "difficulty": 1,
+    "prompt": { "text": "It's time for a bird call competition! What's your favorite bird?", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🦉", "🐦","🐤", "🦚", "🦅", "🕊️", "🦜", "🦆", "🦢", "🐣", "🐔", "🦃", "🐧", "🦖" ], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Ca cawwwww!!", "onExpire": "No hoots heard." }
+  },
+  {
+    "id": "campfire_glow",
+    "weight": 0.9,
+    "difficulty": 1,
+    "prompt": { "text": "Type 'ember' to start the campfire.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["ember"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Owayk Shenok dances. 🔥", "onExpire": "The ember fizzled out." }
+  },
+  {
+    "id": "seance_listen",
+    "weight": 0.4,
+    "difficulty": 3,
+    "prompt": { "text": "Whisper the word 'listen' if you can hear the spirits.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["listen"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The spirits acknowledge you.", "onExpire": "Silence answered instead." }
+  },
+  {
+    "id": "robot_beep",
+    "weight": 0.7,
+    "difficulty": 1,
+    "prompt": { "text": "A strange signal can be heard from the woods... respond with something a robot would say.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["beep", "boop", "bzzt"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The droid synced with you.", "onExpire": "The clanker timed out." }
+  },
+  {
+    "id": "spectral_song",
+    "weight": 0.3,
+    "difficulty": 3,
+    "prompt": { "text": "Camp Hilo needs a jingle, can you compose us one?", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🎵","🎶", "🎼"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "You caught the melody.", "onExpire": "The note faded away." }
+  },
+  {
+    "id": "reflection_flash",
+    "weight": 0.45,
+    "difficulty": 2,
+    "prompt": { "text": "A bright light shines from the sky, can you direct it back?", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["reflect"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "A small explosion is seen in the sky.", "onExpire": "Whatever it was, it left." }
+  },
+  {
+    "id": "lantern_light",
+    "weight": 0.8,
+    "difficulty": 1,
+    "prompt": { "text": "One of the lanterns to the west went dark, how could you light it up?", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["light", "fire", "torch", "lighter", "flint", "match", "oil"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The lantern glows warmly.", "onExpire": "Darkness consumes you." }
+  },
+  {
+    "id": "owl_riddle",
+    "weight": 0.35,
+    "difficulty": 4,
+    "prompt": { "text": "The eye blinks, then asks... \"Who owns the night?\" (one-word answer)", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["wolves","wolf"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The eye approves.", "onExpire": "The eye flies away unimpressed." }
+  },
+  {
+    "id": "thunder_call",
+    "weight": 0.6,
+    "difficulty": 1,
+    "prompt": { "text": "As the thunder roars, Owayk Tase asks: \"Can we get 5 big booms?\"", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["boom boom boom boom boom"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Owayk Tase is pleased.", "onExpire": "The sky stays quiet." }
+  },
+  {
+    "id": "rune_mark",
+    "weight": 0.4,
+    "difficulty": 3,
+    "prompt": { "text": "Ancient shards of limestone are found around the beach, inscribed with the runes of Owayk Ronat. What is their domain?", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["waves", "water", "wave", "sea", "ocean"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The runes pulse with energy.", "onExpire": "The sea takes them back." }
+  },
+  {
+    "id": "robot_restart",
+    "weight": 0.5,
+    "difficulty": 2,
+    "prompt": { "text": "One of the campmaster's drones has malfunctioned... Its monitor reads [101] + [011] -> 9. Please fix the bug.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["8", "eight", "1000", "white"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Systems back online. Thank you camper.", "onExpire": "A spark flies, and the robot dies." }
+  },
+    {
+    "id": "robot_restart2",
+    "weight": 0.5,
+    "difficulty": 2,
+    "prompt": { "text": "One of the campmaster's drones has malfunctioned... Its monitor reads [001] + [001] -> 7. Please fix the bug.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["2", "two", "10", "blue"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Systems back online. Thank you camper.", "onExpire": "A spark flies, and the robot dies." }
+  },
+  {
+    "id": "robot_restart3",
+    "weight": 0.5,
+    "difficulty": 2,
+    "prompt": { "text": "One of the campmaster's drones has malfunctioned... Its monitor reads [010] + [100] -> 4. Please fix the bug.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["6", "six", "110", "yellow"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Systems back online. Thank you camper.", "onExpire": "A spark flies, and the robot dies." }
+  },
+  {
+    "id": "time_token",
+    "weight": 0.2,
+    "difficulty": 4,
+    "prompt": { "text": "The hour glass begins to empty... What passes?", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["time"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Not a second wasted.", "onExpire": "Time slipped away." }
+  },
+  {
+    "id": "spirit_whisper",
+    "weight": 0.25,
+    "difficulty": 3,
+    "prompt": { "text": "Late at night in the graveyard, you hear something call out to you... Whisper to the spirit, and it may respond.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["whisper"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The spirit heard you, and floats away..", "onExpire": "The spirit fades into the night." }
+  },
+  {
+    "id": "star_gaze",
+    "weight": 0.9,
+    "difficulty": 1,
+    "prompt": { "text": "Hurry, catch the falling star!", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["✨", "⭐", "🌠", "🌟"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The star lands in your hand.", "onExpire": "The stars fizzles into cosmic dust." }
+  },
+  {
+    "id": "wolf_howl",
+    "weight": 0.55,
+    "difficulty": 2,
+    "prompt": { "text": "The wolves howl to you, 'howl' back!", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["howl"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The pack acknowledges you.", "onExpire": "Silence from the woods." }
+  },
+  {
+    "id": "ghost_flick",
+    "weight": 0.65,
+    "difficulty": 1,
+    "prompt": { "text": "As you explore the ruins of an old cabin to the east, a ghost jumps at you. Shine a light to send it away!", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🔦","💡", "🏮", "🎃"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The light chases the ghost away.", "onExpire": "The ghost lingers in the shadows." }
+  },
+  {
+    "id": "mystic_raven",
+    "weight": 0.4,
+    "timeLimitSeconds": 11,
+    "difficulty": 2,
+    "prompt": { "text": "Reply with 'caw' to converse with the raven.", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["caw"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The raven brings a trinket.", "onExpire": "The raven flies off." }
+  },
+  {
+    "id": "robot_glitch",
+    "weight": 0.35,
+    "timeLimitSeconds": 6,
+    "difficulty": 2,
+    "prompt": { "text": "While exploring the wreckage up north, you see a computer screen flicker. First Red, then Green, then Yellow... First Blue, then Red, then ...", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["magenta"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The pattern persists.", "onExpire": "You don't make sense of it." }
+  },
+    {
+    "id": "robot_glitch2",
+    "weight": 0.35,
+    "timeLimitSeconds": 6,
+    "difficulty": 2,
+    "prompt": { "text": "While exploring the wreckage up north, you see a computer screen flicker. First Red, then Green, then Yellow... First Blue, then Green, then ...", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["cyan"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The pattern persists.", "onExpire": "You don't make sense of it." }
+  },
+  {
+    "id": "robot_glitch3",
+    "weight": 0.35,
+    "timeLimitSeconds": 6,
+    "difficulty": 2,
+    "prompt": { "text": "While exploring the wreckage up north, you see a computer screen flicker. First Red, then Green, then Yellow... First Green, then Red, then ...", "imageUrl": null },
+    "answers": { "type": "text", "correct": ["yellow"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The pattern persists.", "onExpire": "You don't make sense of it." }
+  },
+  {
+    "id": "camp_bell2",
+    "weight": 0.6,
+    "difficulty": 1,
+    "prompt": { "text": "Jerry fell in the well. Quick! Ring a bell to call for help!", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🔔","🛎️", "🎐"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Help came and we fished him out.", "onExpire": "Jerry's voice got quieter and quieter that day..." }
+  },
+  {
+    "id": "moon_glimmer",
+    "weight": 0.5,
+    "difficulty": 1,
+    "prompt": { "text": "A silver moon rises. Can you capture its glow?", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🌙","🌔","🌕","🌖","🌗","🌘","🌒","🌑","🌚","🌛","🌜"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Owayk Pyeloh blesses you.", "onExpire": "The moon slips behind the clouds." }
+  },
+  {
+    "id": "firework_pop",
+    "weight": 0.7,
+    "difficulty": 1,
+    "prompt": { "text": "In honor of the day Camp Hilo sent Plarg'Thrax packing, send some fireworks!", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🎆","🎇","🎉","✨"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "Explosions of color fill the sky!", "onExpire": "I guess everyone misses him, huh..." }
+  },
+  {
+    "id": "ocean_splash",
+    "weight": 0.6,
+    "difficulty": 1,
+    "prompt": { "text": "It's a perfect day to surf on South Beach. Rip that wave, Juni!", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🌊","💦","💧","🏄‍♂️","🏄‍♀️"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "You ride the crest of the wave.", "onExpire": "The tide took the moment away." }
+  },
+  {
+    "id": "fox_peek",
+    "weight": 0.4,
+    "difficulty": 2,
+    "prompt": { "text": "A small fox approaches the dinner table. It has a hunger only this can satisfy, what does it want?", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🍎", "🍇", "🍗", "🥚", "🥩", "🍞", "🧀", "🍓", "🥕", "🌽"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The fox scurries away with a prize.", "onExpire": "The bushes fall silent again." }
+  },
+  {
+    "id": "camp_flag",
+    "weight": 0.55,
+    "difficulty": 1,
+    "prompt": { "text": "The Camp Hilo flagpole fell to half-mast. Can you raise the flag back up?", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🚩","🏁","🎌","🎏","🏳️"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The flag flies proudly over camp.", "onExpire": "No flag was raised today." }
+  },
+  {
+    "id": "team_spirit",
+    "weight": 0.55,
+    "difficulty": 1,
+    "prompt": { "text": "Quick! Spitroast _____", "imageUrl": null },
+    "answers": { "type": "emoji", "correct": ["🦎"], "match": "any" },
+    "reward": { "type": "stars", "amount": 1 },
+    "feedback": { "onWin": "The flag flies proudly over camp.", "onExpire": "No flag was raised today." }
+  }
+]
