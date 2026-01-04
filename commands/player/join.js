@@ -67,8 +67,16 @@ module.exports = {
                 },
                 curses: { noVote: false, silent: false, confused: false },
                 badges: [],
-                avatarSettings: { hairStyle: 0, hairColor: 0, facialHair: 0, facialHairColor: 0, eyeColor: 0, skinTone: 0, shirt: 0, pants: 0, accessories: [], shoes: 0 },
-                roomSettings: { sheets: 0, pillow: 0, wallDecoration: 0, bedDecoration: 0 },
+                interview: {
+                    creativity: 1,
+                    social: 1,
+                    mobility: 1,
+                    puzzles: 1,
+                    trivia: 1,
+                    reflexes: 1,
+                    goal: "",
+                    strategy: ""
+                },
                 lastDredged: new Date('2023-11-01T00:00:00Z'),
                 lastSentMessage: new Date(),
                 eliminated: false,
@@ -91,30 +99,30 @@ module.exports = {
                         );
 
                     const msg = await chan.send({ embeds: [embed] }).catch(() => null);
-                    try { if (msg && msg.pin) await msg.pin().catch(() => {}); } catch (e) {}
+                    try { if (msg && msg.pin) await msg.pin().catch(() => { }); } catch (e) { }
                 }
             } catch (e) { console.error('error sending/pinning registration embed', e); }
 
-                // assign Camper role if configured and user doesn't already have it
-                let roleAssigned = false;
-                try {
-                    const camperRoleId = discordConfig && (discordConfig.camper_role_id || discordConfig.camper_role);
-                    if (camperRoleId) {
-                        const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
-                        if (member && !member.roles.cache.has(camperRoleId)) {
-                            await member.roles.add(camperRoleId).catch(() => {});
-                            roleAssigned = true;
-                        }
+            // assign Camper role if configured and user doesn't already have it
+            let roleAssigned = false;
+            try {
+                const camperRoleId = discordConfig && (discordConfig.camper_role_id || discordConfig.camper_role);
+                if (camperRoleId) {
+                    const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
+                    if (member && !member.roles.cache.has(camperRoleId)) {
+                        await member.roles.add(camperRoleId).catch(() => { });
+                        roleAssigned = true;
                     }
-                } catch (e) { console.error('error assigning camper role', e); }
+                }
+            } catch (e) { console.error('error assigning camper role', e); }
 
-                let replyMsg = `Player record created (${res.insertedId}). Your confessional channel is ${channelId}.`;
-                if (roleAssigned) replyMsg += ' Camper role assigned.';
-                await interaction.editReply({ content: replyMsg, ephemeral: true });
+            let replyMsg = `Player record created (${res.insertedId}). Your confessional channel is ${channelId}.`;
+            if (roleAssigned) replyMsg += ' Camper role assigned.';
+            await interaction.editReply({ content: replyMsg, ephemeral: true });
 
         } catch (err) {
             console.error('join command error', err);
-            try { await interaction.editReply({ content: 'There was an error creating your player record.', ephemeral: true }); } catch (e) {}
+            try { await interaction.editReply({ content: 'There was an error creating your player record.', ephemeral: true }); } catch (e) { }
         }
     }
 };
