@@ -55,6 +55,7 @@ module.exports = {
                 password: pwd,
                 team: 'none',
                 originalTeam: 'none',
+                assetName: '',
                 inventory: {
                     coins: 0,
                     stars: 0,
