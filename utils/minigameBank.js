@@ -1,13 +1,9 @@
 const { connectToMongo } = require('./mongodbUtil');
 
 function weightedPick(items) {
-    const total = items.reduce((s, it) => s + (typeof it.weight === 'number' ? it.weight : 1), 0);
-    let r = Math.random() * total;
-    for (const it of items) {
-        r -= (typeof it.weight === 'number' ? it.weight : 1);
-        if (r <= 0) return it;
-    }
-    return items[items.length - 1];
+    if (!items || items.length === 0) return null;
+    const idx = Math.floor(Math.random() * items.length);
+    return items[idx];
 }
 
 async function pickRandomChallenge() {

@@ -30,14 +30,16 @@ module.exports = {
 
             // prevent using the campground channel as a confessional
             if (discordConfig && discordConfig.campground_id && String(discordConfig.campground_id) === String(channelId)) {
-                await interaction.editReply({ content: 'You cannot run /join in the campground channel. Please run this command in your personal confessional channel.', ephemeral: true });
+                const err = new EmbedBuilder().setTitle('Wrong Channel').setDescription('You cannot run /join in the campground channel. Please run this command in your personal confessional channel.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [err], ephemeral: true });
                 return;
             }
 
             // ensure player doesn't already exist
             const existing = await campersCol.findOne({ discordId: interaction.user.id });
             if (existing) {
-                await interaction.editReply({ content: 'A player record already exists for your account.', ephemeral: true });
+                const err = new EmbedBuilder().setTitle('Already Registered').setDescription('A player record already exists for your account.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [err], ephemeral: true });
                 return;
             }
 
@@ -64,7 +66,10 @@ module.exports = {
                     seanceTokens: 0,
                     timeTokens: 0,
                     nothingTokens: 0,
-                    eggToken: 0
+                    eggToken: 0,
+                    rpsRock: 1,
+                    rpsPaper: 1,
+                    rpsScissors: 1
                 },
                 curses: { noVote: false, silent: false, confused: false },
                 badges: [],
@@ -117,13 +122,20 @@ module.exports = {
                 }
             } catch (e) { console.error('error assigning camper role', e); }
 
-            let replyMsg = `Player record created (${res.insertedId}). Your confessional channel is ${channelId}.`;
-            if (roleAssigned) replyMsg += ' Camper role assigned.';
-            await interaction.editReply({ content: replyMsg, ephemeral: true });
+            const ok = new EmbedBuilder()
+                .setTitle('Registered')
+                .setDescription(`Player record created. Your confessional channel is <#${channelId}>.`)
+                .setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0x0099ff)
+                .addFields({ name: 'Player ID', value: `${res.insertedId}` });
+            if (roleAssigned) ok.addFields({ name: 'Role', value: 'Camper role assigned' });
+            await interaction.editReply({ embeds: [ok], ephemeral: true });
 
         } catch (err) {
             console.error('join command error', err);
-            try { await interaction.editReply({ content: 'There was an error creating your player record.', ephemeral: true }); } catch (e) { }
+            try {
+                const err = new EmbedBuilder().setTitle('Error').setDescription('There was an error creating your player record.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [err], ephemeral: true });
+            } catch (e) { }
         }
     }
 };

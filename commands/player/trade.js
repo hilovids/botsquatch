@@ -29,30 +29,50 @@ module.exports = {
             const campersCol = db.collection('campers');
 
             const sender = await campersCol.findOne({ discordId: userId });
+            const discordConfigs = db.collection('discordConfigs');
+            const discordConfig = await discordConfigs.findOne({ server_id: guildId });
+            const embedColor = discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000;
+            const thumbnail = discordConfig && discordConfig.embed && discordConfig.embed.thumbnail_url ? discordConfig.embed.thumbnail_url : null;
             if (!sender) {
-                await interaction.editReply({ content: 'Could not find your player record. Please register with /join first.', ephemeral: true });
+                const e = new EmbedBuilder().setTitle('No Profile').setDescription('Could not find your player record. Please register with /join first.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
+                return;
+            }
+            if (sender.eliminated) {
+                const e = new EmbedBuilder().setTitle('Eliminated').setDescription('Eliminated players cannot trade.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
             const targetUser = interaction.options.getUser('target');
             if (!targetUser) {
-                await interaction.editReply({ content: 'Invalid target user.', ephemeral: true });
+                const e = new EmbedBuilder().setTitle('Invalid Target').setDescription('Invalid target user.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
             if (targetUser.id === userId) {
-                await interaction.editReply({ content: 'You cannot send items to yourself.', ephemeral: true });
+                const e = new EmbedBuilder().setTitle('Invalid Trade').setDescription('You cannot send items to yourself.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
             const target = await campersCol.findOne({ discordId: targetUser.id });
             if (!target) {
-                await interaction.editReply({ content: 'Target player does not have a player record.', ephemeral: true });
+                const e = new EmbedBuilder().setTitle('No Target Profile').setDescription('Target player does not have a player record.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
             if (target.eliminated) {
-                await interaction.editReply({ content: 'You cannot send items to an eliminated player.', ephemeral: true });
+                const e = new EmbedBuilder().setTitle('Invalid Target').setDescription('You cannot send items to an eliminated player.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
@@ -60,22 +80,23 @@ module.exports = {
             const quantity = interaction.options.getInteger('quantity');
 
             if (!item || !quantity || quantity < 1) {
-                await interaction.editReply({ content: 'Invalid item or quantity.', ephemeral: true });
+                const e = new EmbedBuilder().setTitle('Invalid Input').setDescription('Invalid item or quantity.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
             const available = (sender.inventory && typeof sender.inventory[item] === 'number') ? sender.inventory[item] : 0;
             if (available < quantity) {
-                await interaction.editReply({ content: `You only have ${available} ${item.replace(/([A-Z])/g, ' $1').toLowerCase()}.`, ephemeral: true });
+                const e = new EmbedBuilder().setTitle('Insufficient Items').setDescription(`You only have ${available} ${item.replace(/([A-Z])/g, ' $1').toLowerCase()}.`).setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
             // perform transfer
             await campersCol.updateOne({ _id: sender._id }, { $inc: { ['inventory.' + item]: -quantity } });
             await campersCol.updateOne({ _id: target._id }, { $inc: { ['inventory.' + item]: quantity } });
-
-            const discordConfigs = db.collection('discordConfigs');
-            const discordConfig = await discordConfigs.findOne({ server_id: guildId });
 
             const updatedSender = await campersCol.findOne({ _id: sender._id });
             const updatedTarget = await campersCol.findOne({ _id: target._id });
@@ -119,12 +140,15 @@ module.exports = {
             await deliverEmbedToPlayer(updatedSender, userId);
             await deliverEmbedToPlayer(updatedTarget, targetUser.id);
 
-            const reply = `You sent ${quantity} ${label} to ${target.displayName || target.username}. Your new total: ${senderNew}. Recipient's new total: ${targetNew}.`;
-            await interaction.editReply({ content: reply, ephemeral: true });
+            const replyEmbed = new EmbedBuilder().setTitle('Trade Sent').setDescription(`${sender.displayName || sender.username} sent ${quantity} ${label} to ${target.displayName || target.username}.`).setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0x0099ff).addFields({ name: 'Your new total', value: `${senderNew}` }, { name: 'Recipient new total', value: `${targetNew}` });
+            await interaction.editReply({ embeds: [replyEmbed], ephemeral: true });
 
         } catch (err) {
             console.error('trade command error', err);
-            try { await interaction.editReply({ content: 'There was an error processing the trade.', ephemeral: true }); } catch (e) {}
+            try {
+                const e = new EmbedBuilder().setTitle('Error').setDescription('There was an error processing the trade.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
+            } catch (e) {}
         }
     }
 };

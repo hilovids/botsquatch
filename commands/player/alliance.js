@@ -22,10 +22,19 @@ module.exports = {
             const alliancesCol = db.collection('alliances');
 
             const inviter = await campersCol.findOne({ discordId: interaction.user.id });
-            if (!inviter) return await interaction.editReply({ content: 'Could not find your player record. Register with /join first.', ephemeral: true });
-            if (inviter.eliminated) return await interaction.editReply({ content: 'Eliminated players cannot create alliances.', ephemeral: true });
-
             const discordConfig = await discordConfigs.findOne({ server_id: interaction.guild.id });
+            const embedColor = discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000;
+            const thumbnail = discordConfig && discordConfig.embed && discordConfig.embed.thumbnail_url ? discordConfig.embed.thumbnail_url : null;
+            if (!inviter) {
+                const e = new EmbedBuilder().setTitle('No Profile').setDescription('Could not find your player record. Register with /join first.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                return await interaction.editReply({ embeds: [e], ephemeral: true });
+            }
+            if (inviter.eliminated) {
+                const e = new EmbedBuilder().setTitle('Eliminated').setDescription('Eliminated players cannot create alliances.').setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                return await interaction.editReply({ embeds: [e], ephemeral: true });
+            }
 
             const name = interaction.options.getString('name');
             const msg = interaction.options.getString('message');
@@ -86,7 +95,9 @@ module.exports = {
             const options = eligible.map(c => ({ label: (c.displayName || c.username || c.discordId).slice(0, 100), value: String(c.discordId) }));
 
             if (!options || options.length === 0) {
-                await interaction.editReply({ content: `Alliance created: <#${channel.id}>. No eligible players to invite (same team & not eliminated).`, ephemeral: true });
+                const e = new EmbedBuilder().setTitle('Alliance Created').setDescription(`Alliance created: <#${channel.id}>. No eligible players to invite (same team & not eliminated).`).setColor(embedColor);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
@@ -122,10 +133,15 @@ module.exports = {
                 return;
             }
 
-            await interaction.editReply({ content: `Alliance created: <#${channel.id}>. Use the selector in your confessional (or your DMs) to invite players.`, ephemeral: true });
+            const ok = new EmbedBuilder().setTitle('Alliance Created').setDescription(`Alliance created: <#${channel.id}>. Use the selector in your confessional (or your DMs) to invite players.`).setColor(embedColor);
+            if (thumbnail) ok.setThumbnail(thumbnail);
+            await interaction.editReply({ embeds: [ok], ephemeral: true });
         } catch (err) {
             console.error('alliance command error', err);
-            try { await interaction.editReply({ content: 'There was an error creating the alliance.', ephemeral: true }); } catch (e) {}
+            try {
+                const e = new EmbedBuilder().setTitle('Error').setDescription('There was an error creating the alliance.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
+            } catch (e) {}
         }
     }
 };

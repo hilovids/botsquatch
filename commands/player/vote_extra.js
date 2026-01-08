@@ -36,21 +36,29 @@ module.exports = {
             const discordConfigs = db.collection('discordConfigs');
 
             const ceremony = await ceremonies.findOne({ guildId, active: true });
+            const discordConfig = await discordConfigs.findOne({ server_id: guildId });
             if (!ceremony) {
-                await interaction.editReply({ content: 'No active elimination ceremony to vote in.', ephemeral: true });
+                const e = new (require('discord.js')).EmbedBuilder().setTitle('No Ceremony').setDescription('No active elimination ceremony to vote in.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
             // find the voter camper record to check extra votes
             const voter = await campersCol.findOne({ discordId: interaction.user.id });
             if (!voter) {
-                await interaction.editReply({ content: 'Could not find your player record. You cannot use an extra vote.', ephemeral: true });
+                const e = new (require('discord.js')).EmbedBuilder().setTitle('No Profile').setDescription('Could not find your player record. You cannot use an extra vote.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
-
+            if (voter.eliminated) {
+                const e = new (require('discord.js')).EmbedBuilder().setTitle('Eliminated').setDescription('Eliminated players cannot vote.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
+                return;
+            }
             // prevent cursed players with noVote from using extra votes
             if (voter.curses && voter.curses.noVote) {
-                await interaction.editReply({ content: 'You are cursed and cannot vote.', ephemeral: true });
+                const e = new (require('discord.js')).EmbedBuilder().setTitle('Cursed').setDescription('You are cursed and cannot vote.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
 
@@ -84,7 +92,8 @@ module.exports = {
                 }).toArray();
                 if (partial.length === 1) camper = partial[0];
                 else if (partial.length > 1) {
-                    await interaction.editReply({ content: `Multiple campers matched "${targetText}". Please be more specific.`, ephemeral: true });
+                    const em = new (require('discord.js')).EmbedBuilder().setTitle('Multiple Matches').setDescription(`Multiple campers matched "${targetText}". Please be more specific.`).setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    await interaction.editReply({ embeds: [em], ephemeral: true });
                     return;
                 }
             } else if (matches.length === 1) camper = matches[0];
@@ -94,13 +103,15 @@ module.exports = {
             }
 
             if (!camper) {
-                await interaction.editReply({ content: `No camper matched "${targetText}".`, ephemeral: true });
+                const em = new (require('discord.js')).EmbedBuilder().setTitle('No Match').setDescription(`No camper matched "${targetText}".`).setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [em], ephemeral: true });
                 return;
             }
 
             // ensure target is allowed by ceremony team
             if (ceremony.team && ceremony.team !== 'all' && camper.team !== ceremony.team) {
-                await interaction.editReply({ content: `That camper is not eligible in this vote.`, ephemeral: true });
+                const em = new (require('discord.js')).EmbedBuilder().setTitle('Not Eligible').setDescription(`That camper is not eligible in this vote.`).setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [em], ephemeral: true });
                 return;
             }
 
@@ -176,11 +187,13 @@ module.exports = {
             const updatedVoter = await campersCol.findOne({ _id: voter._id });
             const remaining = (updatedVoter.inventory && updatedVoter.inventory.voteTokens) ? updatedVoter.inventory.voteTokens : 0;
 
-            await interaction.editReply({ content: `Your extra vote for **${vote.targetName}** has been recorded. You have ${remaining} extra vote(s) remaining.`, ephemeral: true });
+            const ok = new (require('discord.js')).EmbedBuilder().setTitle('Extra Vote Recorded').setDescription(`Your extra vote for **${vote.targetName}** has been recorded. You have ${remaining} extra vote(s) remaining.`).setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0x0099ff);
+            await interaction.editReply({ embeds: [ok], ephemeral: true });
 
         } catch (err) {
             console.error('vote_extra command error', err);
-            await interaction.editReply({ content: 'There was an error recording your extra vote.', ephemeral: true });
+            const em = new (require('discord.js')).EmbedBuilder().setTitle('Error').setDescription('There was an error recording your extra vote.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+            await interaction.editReply({ embeds: [em], ephemeral: true });
         }
     },
 };

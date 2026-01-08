@@ -12,6 +12,14 @@ module.exports = {
 			// Vote button: customId => "vote:<camperId>"
 			if (interaction.isButton()) {
 				const cid = interaction.customId || '';
+				// route gamble interactions to gambling handler
+				if (cid.startsWith('gamble:')) {
+					try {
+						const { handleButtonInteraction } = require('../utils/gambling');
+						await handleButtonInteraction(cid, interaction);
+					} catch (e) { console.error('gamble interaction dispatch error', e); }
+					return;
+				}
 				// Alliance invite accept/decline: alliance_invite_accept:<allianceId>:<inviteId>
 				if (cid.startsWith('alliance_invite_accept:') || cid.startsWith('alliance_invite_decline:')) {
 					await interaction.deferReply({ ephemeral: true });

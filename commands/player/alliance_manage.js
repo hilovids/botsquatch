@@ -23,29 +23,51 @@ module.exports = {
             // basic check: alliance channels are named starting with 'alliance-' or in alliance category
             const allianceCatId = discordConfig && (discordConfig.alliance_category_id || null);
             if (!(channel.name && channel.name.startsWith('alliance-')) && String(channel.parentId) !== String(allianceCatId)) {
-                return await interaction.editReply({ content: 'This channel is not an alliance channel.', ephemeral: true });
+                const e = new EmbedBuilder().setTitle('Not An Alliance').setDescription('This channel is not an alliance channel.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                return await interaction.editReply({ embeds: [e], ephemeral: true });
             }
 
             const sub = interaction.options.getSubcommand();
             const member = await campersCol.findOne({ discordId: interaction.user.id });
-            if (!member) return await interaction.editReply({ content: 'You do not have a player record.', ephemeral: true });
+            if (!member) {
+                const e = new EmbedBuilder().setTitle('No Profile').setDescription('You do not have a player record.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                return await interaction.editReply({ embeds: [e], ephemeral: true });
+            }
 
             if (sub === 'invite') {
                 const targetUser = interaction.options.getUser('user');
-                if (!targetUser) return await interaction.editReply({ content: 'Invalid target.', ephemeral: true });
-                if (String(targetUser.id) === String(interaction.user.id)) return await interaction.editReply({ content: 'You cannot invite yourself.', ephemeral: true });
+                if (!targetUser) {
+                    const e = new EmbedBuilder().setTitle('Invalid Target').setDescription('Invalid target.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    return await interaction.editReply({ embeds: [e], ephemeral: true });
+                }
+                if (String(targetUser.id) === String(interaction.user.id)) {
+                    const e = new EmbedBuilder().setTitle('Invalid Invite').setDescription('You cannot invite yourself.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    return await interaction.editReply({ embeds: [e], ephemeral: true });
+                }
 
                 const target = await campersCol.findOne({ discordId: targetUser.id, eliminated: { $ne: true } });
-                if (!target) return await interaction.editReply({ content: 'Target is not a valid camper or is eliminated.', ephemeral: true });
+                if (!target) {
+                    const e = new EmbedBuilder().setTitle('Invalid Target').setDescription('Target is not a valid camper or is eliminated.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    return await interaction.editReply({ embeds: [e], ephemeral: true });
+                }
 
                 // ensure inviter can view the channel and is not eliminated
                 const perms = channel.permissionsFor(interaction.user);
-                if (!perms || !perms.has(PermissionFlagsBits.ViewChannel)) return await interaction.editReply({ content: 'You are not a member of this alliance.', ephemeral: true });
-                if (member.eliminated) return await interaction.editReply({ content: 'Eliminated campers cannot send invites.', ephemeral: true });
+                if (!perms || !perms.has(PermissionFlagsBits.ViewChannel)) {
+                    const e = new EmbedBuilder().setTitle('Not A Member').setDescription('You are not a member of this alliance.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    return await interaction.editReply({ embeds: [e], ephemeral: true });
+                }
+                if (member.eliminated) {
+                    const e = new EmbedBuilder().setTitle('Eliminated').setDescription('Eliminated campers cannot send invites.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    return await interaction.editReply({ embeds: [e], ephemeral: true });
+                }
 
                 // find alliance record in DB
                 const alliance = await alliances.findOne({ channelId, guildId: interaction.guild.id, active: true });
-                if (!alliance) return await interaction.editReply({ content: 'This channel is not a managed alliance.', ephemeral: true });
+                if (!alliance) {
+                    const e = new EmbedBuilder().setTitle('Not Managed').setDescription('This channel is not a managed alliance.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    return await interaction.editReply({ embeds: [e], ephemeral: true });
+                }
 
                 const inviteObj = { _id: new ObjectId(), discordId: targetUser.id, inviterId: interaction.user.id, message: `You are invited to join alliance ${alliance.name}`, createdAt: new Date(), expiresAt: new Date(Date.now() + (24 * 60 * 60 * 1000)), status: 'pending' };
                 await alliances.updateOne({ _id: alliance._id }, { $push: { invites: inviteObj } });
@@ -73,14 +95,18 @@ module.exports = {
                     if (userObj) await userObj.send({ content: pingContent, embeds: [inviteEmbed], components: [row] }).catch(() => null);
                 }
 
-                await interaction.editReply({ content: `Invite sent to ${target.displayName || target.username || targetUser.tag}.`, ephemeral: true });
+                const ok = new EmbedBuilder().setTitle('Invite Sent').setDescription(`Invite sent to ${target.displayName || target.username || targetUser.tag}.`).setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0x0099ff);
+                await interaction.editReply({ embeds: [ok], ephemeral: true });
                 return;
             }
 
             if (sub === 'leave') {
                 // ensure member
                 const perms = channel.permissionsFor(interaction.user);
-                if (!perms || !perms.has(PermissionFlagsBits.ViewChannel)) return await interaction.editReply({ content: 'You are not a member of this alliance.', ephemeral: true });
+                if (!perms || !perms.has(PermissionFlagsBits.ViewChannel)) {
+                    const e = new EmbedBuilder().setTitle('Not A Member').setDescription('You are not a member of this alliance.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                    return await interaction.editReply({ embeds: [e], ephemeral: true });
+                }
 
                 // remove from alliance members in DB and remove user's overwrite
                 const alliance = await alliances.findOne({ channelId, guildId: interaction.guild.id, active: true });
@@ -101,7 +127,8 @@ module.exports = {
                 } catch (e) {}
 
                 // reply to the interaction before attempting to delete the channel (deleting the channel invalidates the original interaction message)
-                await interaction.editReply({ content: 'You left the alliance.', ephemeral: true });
+                const ok = new EmbedBuilder().setTitle('Left Alliance').setDescription('You left the alliance.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0x0099ff);
+                await interaction.editReply({ embeds: [ok], ephemeral: true });
 
                 if (shouldDeleteChannel) {
                     // delete channel in background
