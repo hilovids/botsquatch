@@ -13,7 +13,7 @@ module.exports = {
                 { name: 'Rock Paper Scissors', value: 'rps' }
             ))
         .addStringOption(opt => opt.setName('bet_type').setDescription('Bet with stars or coins').setRequired(true)
-            .addChoices({ name: 'Stars', value: 'stars' }, { name: 'Coins', value: 'coins' }))
+            .addChoices({ name: 'Stars', value: 'stars' }))
         .addIntegerOption(opt => opt.setName('amount').setDescription('Bet amount').setRequired(true)),
 
     async execute(interaction) {
