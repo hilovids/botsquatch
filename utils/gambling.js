@@ -11,21 +11,31 @@ function fileExists(p) {
     try { return fs.existsSync(p); } catch (e) { return false; }
 }
 
-// Attempt to atomically deduct `amount` from the house starsPool, capped to current pool.
-// Returns the actual amount deducted (0 if none). `incObj` can include other $inc fields (stats).
-async function consumePool(db, amount, incObj = {}) {
-    const gambleCol = db.collection('gambling_state');
-    for (let i = 0; i < 5; i++) {
-        const doc = await gambleCol.findOne({ _id: 'global' });
-        const pool = (doc && typeof doc.starsPool === 'number') ? doc.starsPool : 0;
-        if (pool <= 0) return 0;
-        const take = Math.min(amount, pool);
-        const update = { $inc: Object.assign({ starsPool: -take }, incObj) };
-        const res = await gambleCol.findOneAndUpdate({ _id: 'global', starsPool: pool }, update, { returnDocument: 'after' });
-        if (res && res.value) return take;
-        // otherwise pool changed, retry
+// Standardized helper to apply $inc to gambling_state with logging
+async function applyGambleInc(db, incObj, context = '') {
+    try {
+        const col = db.collection('gambling_state');
+        console.log('applyGambleInc', context, incObj);
+        const res = await col.updateOne({ _id: 'global' }, { $inc: incObj }, { upsert: true });
+        console.log('applyGambleInc result', context, res && res.result ? res.result : res);
+        return res;
+    } catch (e) {
+        console.error('applyGambleInc error', context, e);
+        throw e;
     }
-    return 0;
+}
+
+// Standardized helper for player inventory updates with logging
+async function applyPlayerInc(collection, filter, incObj, context = '') {
+    try {
+        console.log('applyPlayerInc', context, filter, incObj);
+        const res = await collection.updateOne(filter, { $inc: incObj });
+        console.log('applyPlayerInc result', context, res && res.result ? res.result : res);
+        return res;
+    } catch (e) {
+        console.error('applyPlayerInc error', context, e);
+        throw e;
+    }
 }
 
 function _randInt(max) { return Math.floor(Math.random() * max); }
@@ -107,16 +117,11 @@ function makeTimeout(sessionId, ms = 3 * 60 * 1000) {
         const s = sessions.get(sessionId);
         if (!s) return;
         try {
-            if (s.bet && s.refundOnTimeout) {
-                const db = await connectToMongo();
-                const campers = db.collection('campers');
-                await campers.updateOne({ discordId: s.userId }, { $inc: { ['inventory.' + s.betType]: s.bet } });
-            }
             if (s.message && s.message.edit) {
-                const embed = new EmbedBuilder().setTitle('Gamble Timed Out').setDescription('You did not respond in time; your bet was returned.').setColor(0xFF0000);
+                const embed = new EmbedBuilder().setTitle('Gamble Timed Out').setDescription('You did not respond in time.').setColor(0xFF0000);
                 try { await s.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
             }
-        } catch (e) { console.error('gamble timeout refund error', e); }
+        } catch (e) { console.error('gamble timeout error', e); }
         sessions.delete(sessionId);
     }, ms);
 }
@@ -152,15 +157,19 @@ async function startGamble(interaction, game, betType, betAmount) {
         return;
     }
 
-    // deduct immediately
-    await campers.updateOne({ _id: player._id }, { $inc: { ['inventory.' + betType]: -betAmount } });
+    // If the bet is in stars and the house has no stars to pay out, block the gamble early
+    if (betType === 'stars' && gambleState && typeof gambleState.starsPool === 'number' && gambleState.starsPool <= 0) {
+        const noHouse = new EmbedBuilder().setTitle('House Broke').setDescription('The house has no stars to pay out right now; gambling with stars is temporarily disabled.').setColor(0xFF0000);
+        if (thumbnail) noHouse.setThumbnail(thumbnail);
+        await interaction.editReply({ embeds: [noHouse], ephemeral: true });
+        return;
+    }
 
-    // store player's inventory after deducting the bet so we can compute actual changes later
-    const afterDeduct = await campers.findOne({ _id: player._id });
-    const startInventory = (afterDeduct && afterDeduct.inventory && typeof afterDeduct.inventory[betType] === 'number') ? afterDeduct.inventory[betType] : 0;
+    // DO NOT deduct the bet up front. Record player's starting inventory for display and change calculations.
+    const startInventory = available;
 
     const sessionId = randomUUID();
-    const session = { id: sessionId, userId: interaction.user.id, guildId: interaction.guildId, game, bet: betAmount, betType, refundOnTimeout: true, startInventory };
+    const session = { id: sessionId, userId: interaction.user.id, guildId: interaction.guildId, game, bet: betAmount, betType, refundOnTimeout: false, startInventory };
     sessions.set(sessionId, session);
     session.timeout = makeTimeout(sessionId);
 
@@ -368,18 +377,22 @@ async function handleButtonInteraction(customId, interaction) {
             let payout = 0;
             if (won) {
                 const desired = isGold ? Math.floor(session.bet * 25) : Math.floor(session.bet * 2.5);
-                // attempt to consume from pool (atomic)
-                const actualPaid = await consumePool(db, desired);
+                const stateDoc = await gamblingCol.findOne({ _id: 'global' });
+                const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
+                const actualPaid = Math.min(desired, Math.max(0, pool));
                 if (actualPaid > 0) {
                     payout = actualPaid;
-                    await campers.updateOne({ _id: player._id }, { $inc: { ['inventory.' + session.betType]: payout } });
+                    await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: payout }, 'card_payout');
+                    await applyGambleInc(db, { starsPool: -actualPaid, 'stats.cardWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'card_win');
                 } else {
-                    payout = 0; // house couldn't pay
+                    payout = 0;
+                    // record that bet was played
+                    await applyGambleInc(db, { 'stats.cardWins': 1, 'stats.totalPayouts': 0, 'stats.totalBets': session.bet }, 'card_win_no_pool');
                 }
-                // update stats (reflect actual payout)
-                await gamblingCol.updateOne({ _id: 'global' }, { $inc: { 'stats.cardWins': 1, 'stats.totalPayouts': payout, 'stats.totalBets': session.bet } }, { upsert: true });
             } else {
-                await gamblingCol.updateOne({ _id: 'global' }, { $inc: { starsPool: session.bet, 'stats.cardLosses': 1, 'stats.totalBets': session.bet } }, { upsert: true });
+                // player loses: remove bet from player's inventory and add to house
+                await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: -session.bet }, 'card_loss_player_deduct');
+                await applyGambleInc(db, { starsPool: session.bet, 'stats.cardLosses': 1, 'stats.totalBets': session.bet }, 'card_loss');
             }
 
             // fetch updated player inventory so we can show remaining balance
@@ -428,8 +441,9 @@ async function handleButtonInteraction(customId, interaction) {
                 state.playerHand.push(state.deck.pop());
                     if (handValue(state.playerHand) > 21) {
                     state.finished = true;
-                        const gambleCol = db.collection('gambling_state');
-                        await gambleCol.updateOne({ _id: 'global' }, { $inc: { starsPool: session.bet, 'stats.bjLosses': 1, 'stats.totalBets': session.bet } }, { upsert: true });
+                        // deduct player's bet on bust and add to house
+                        await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: -session.bet }, 'bj_bust_player_deduct');
+                        await applyGambleInc(db, { starsPool: session.bet, 'stats.bjLosses': 1, 'stats.totalBets': session.bet }, 'bj_bust');
                     const embed = new EmbedBuilder().setTitle('Blackjack — Busted').setDescription(renderBlackjack(state)).setColor(0xFF0000);
                     if (thumbnail) embed.setThumbnail(thumbnail);
                     // fetch updated player inventory
@@ -459,12 +473,15 @@ async function handleButtonInteraction(customId, interaction) {
                 const gambleCol = db.collection('gambling_state');
                 if (result === 'win') {
                     const desired = Math.floor(session.bet * 2);
-                    const actualPaid = await consumePool(db, desired);
+                    const stateDoc = await gambleCol.findOne({ _id: 'global' });
+                    const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
+                    const actualPaid = Math.min(desired, Math.max(0, pool));
                     if (actualPaid > 0) {
-                        await campers.updateOne({ _id: player._id }, { $inc: { ['inventory.' + session.betType]: actualPaid } });
+                        await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: actualPaid }, 'bj_payout');
+                        await applyGambleInc(db, { starsPool: -actualPaid, 'stats.bjWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'bj_win');
+                    } else {
+                        await applyGambleInc(db, { 'stats.bjWins': 1, 'stats.totalPayouts': 0, 'stats.totalBets': session.bet }, 'bj_win_no_pool');
                     }
-                    // update stats to reflect actual payout
-                    await gambleCol.updateOne({ _id: 'global' }, { $inc: { 'stats.bjWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet } }, { upsert: true });
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
                     const startInv = (session && typeof session.startInventory === 'number') ? session.startInventory : 0;
@@ -475,7 +492,8 @@ async function handleButtonInteraction(customId, interaction) {
                     try { await session.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
                     await interaction.reply({ content: `You win ${actualChange} ${session.betType}! You now have ${remaining} ${session.betType}.`, ephemeral: true });
                 } else if (result === 'push') {
-                    await campers.updateOne({ _id: player._id }, { $inc: { ['inventory.' + session.betType]: session.bet } });
+                    // push: no inventory change because bet wasn't deducted upfront; just record the bet
+                    await applyGambleInc(db, { 'stats.totalBets': session.bet }, 'bj_push');
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
                     const startInv = (session && typeof session.startInventory === 'number') ? session.startInventory : 0;
@@ -486,7 +504,9 @@ async function handleButtonInteraction(customId, interaction) {
                     try { await session.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
                     await interaction.reply({ content: `Push — your bet was returned. You now have ${remaining} ${session.betType}.`, ephemeral: true });
                 } else {
-                    await gambleCol.updateOne({ _id: 'global' }, { $inc: { starsPool: session.bet, 'stats.bjLosses': 1, 'stats.totalBets': session.bet } }, { upsert: true });
+                    // player loses: deduct bet and add to house pool
+                    await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: -session.bet }, 'bj_loss_player_deduct');
+                    await applyGambleInc(db, { starsPool: session.bet, 'stats.bjLosses': 1, 'stats.totalBets': session.bet }, 'bj_loss');
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
                     const embed = new EmbedBuilder().setTitle('Blackjack — You Lose').setDescription(renderBlackjack(state)).setColor(0xFF0000);
@@ -534,7 +554,7 @@ async function handleButtonInteraction(customId, interaction) {
                 return true;
             }
             // consume the player's R/P/S card
-            await campers.updateOne({ _id: playerDoc._id }, { $inc: { ['inventory.' + playerField]: -1 } });
+            await applyPlayerInc(campers, { _id: playerDoc._id }, { ['inventory.' + playerField]: -1 }, 'rps_consume_card');
             const gambleCol = db.collection('gambling_state');
             let stateDoc = await gambleCol.findOne({ _id: 'global' });
             if (!stateDoc) stateDoc = { rocks:10,papers:10,scissors:10,elderHand:1, starsPool:10 };
@@ -563,29 +583,33 @@ async function handleButtonInteraction(customId, interaction) {
                 if (botChoice === 'rock') incObj.rocks = -1;
                 if (botChoice === 'paper') incObj.papers = -1;
                 if (botChoice === 'scissors') incObj.scissors = -1;
-                if (Object.keys(incObj).length > 0) await gambleCol.updateOne({ _id: 'global' }, { $inc: incObj }, { upsert: true });
+                if (Object.keys(incObj).length > 0) await applyGambleInc(db, incObj, `rps_dec_${botChoice}`);
             }
 
 
             if (result === 'win') {
-                // attempt to consume pool atomically
                 const desired = potentialPayout;
-                actualPaid = await consumePool(db, desired);
+                const stateDoc = await gambleCol.findOne({ _id: 'global' });
+                const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
+                actualPaid = Math.min(desired, Math.max(0, pool));
                 if (actualPaid > 0) {
-                    await campers.updateOne({ discordId: session.userId }, { $inc: { ['inventory.' + session.betType]: actualPaid } });
+                    await applyPlayerInc(campers, { discordId: session.userId }, { ['inventory.' + session.betType]: actualPaid }, 'rps_payout');
+                    await applyGambleInc(db, { starsPool: -actualPaid, 'stats.rpsWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'rps_win');
+                } else {
+                    await applyGambleInc(db, { 'stats.rpsWins': 1, 'stats.totalPayouts': 0, 'stats.totalBets': session.bet }, 'rps_win_no_pool');
                 }
-                await gambleCol.updateOne({ _id: 'global' }, { $inc: { 'stats.rpsWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet } }, { upsert: true });
                 // fetch updated player inventory
                 var updatedPlayer = await campers.findOne({ discordId: session.userId });
                 var remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
             } else if (result === 'draw') {
-                // refund the bet on draw
-                await campers.updateOne({ discordId: session.userId }, { $inc: { ['inventory.' + session.betType]: session.bet } });
+                // draw: bet is not deducted up front, so no refund; just record the bet
+                await applyGambleInc(db, { 'stats.totalBets': session.bet }, 'rps_draw');
                 var updatedPlayer = await campers.findOne({ discordId: session.userId });
                 var remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
-                await gambleCol.updateOne({ _id: 'global' }, { $inc: { 'stats.totalBets': session.bet } }, { upsert: true });
             } else if (result === 'lose') {
-                await gambleCol.updateOne({ _id: 'global' }, { $inc: { starsPool: session.bet, 'stats.rpsLosses': 1, 'stats.totalBets': session.bet } }, { upsert: true });
+                // player loses: deduct bet and add to pool
+                await applyPlayerInc(campers, { discordId: session.userId }, { ['inventory.' + session.betType]: -session.bet }, 'rps_loss_player_deduct');
+                await applyGambleInc(db, { starsPool: session.bet, 'stats.rpsLosses': 1, 'stats.totalBets': session.bet }, 'rps_loss');
                 var updatedPlayer = await campers.findOne({ discordId: session.userId });
                 var remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
             }

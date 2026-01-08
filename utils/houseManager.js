@@ -173,7 +173,7 @@ async function startDailyNotifier(client) {
     }
 
     // post once immediately
-    postOnce();
+    // postOnce();
     // then every 24 hours
     setInterval(postOnce, 24 * 60 * 60 * 1000);
 }
