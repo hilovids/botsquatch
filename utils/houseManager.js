@@ -9,7 +9,7 @@ async function getResources() {
         payouts: {
             card: { multiplier: 2.5, note: '1/3 chance, gold pays 25x' },
             blackjack: { multiplier: 1.8, note: 'house favors slightly' },
-            rps: { multiplier: 3.0, note: 'simple payout' }
+            rps: { multiplier: 2.0, note: 'simple payout' }
         },
         counts: {
             rocks: doc.rocks || 0,
