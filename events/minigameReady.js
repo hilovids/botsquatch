@@ -3,21 +3,8 @@ const { connectToMongo } = require('../utils/mongodbUtil');
 const { pickRandomChallenge } = require('../utils/minigameBank');
 const { startDailyNotifier, startDailyCamperRefresh } = require('../utils/houseManager');
 
-// how many drops per day (random between these)
-const MIN_DROPS = 10;
-const MAX_DROPS = 12;
 // give players 1 minute to respond (in ms)
 const RESPONSE_TIME_MS = 1 * 60 * 1000;
-
-function pickNDistinctTimes(count, startMs, endMs) {
-    const times = [];
-    for (let i = 0; i < count; i++) {
-        const t = startMs + Math.floor(Math.random() * (endMs - startMs));
-        times.push(t);
-    }
-    times.sort((a, b) => a - b);
-    return times;
-}
 
 function answerMatches(challenge, content) {
     if (!content) return false;
@@ -90,75 +77,78 @@ async function postChallengeToGuild(guild) {
     const collector = channel.createMessageCollector({ filter, time: RESPONSE_TIME_MS });
     let winnerFound = false;
 
-    collector.on('collect', async (m) => {
-        try {
-            const campersCol = db.collection('campers');
-
-            // only award / end if this author has a camper record
-            const camper = await campersCol.findOne({ discordId: String(m.author.id) });
-            if (!camper) return; // ignore unregistered users
-
-            const reward = challenge.reward || { type: 'stars', amount: 1 };
-            const inc = {};
-            if (reward.type === 'stars') inc['inventory.stars'] = reward.amount || 1;
-            if (reward.type === 'coins') inc['inventory.coins'] = reward.amount || 0;
-
-            // update existing camper (do not create new)
-            await campersCol.updateOne({ discordId: String(m.author.id) }, { $inc: inc }, { upsert: false });
-
-            const updated = await campersCol.findOne({ discordId: String(m.author.id) });
-            const totalStars = (updated && updated.inventory && updated.inventory.stars) || 0;
-            const totalCoins = (updated && updated.inventory && updated.inventory.coins) || 0;
-
-            // update stats: successes and response time
+    // return a promise that resolves when this challenge's collector ends
+    return new Promise((resolve) => {
+        collector.on('collect', async (m) => {
             try {
-                const statsCol = db.collection('minigame_stats');
-                const responseMs = (m.createdTimestamp || Date.now()) - (botMsg.createdTimestamp || Date.now());
-                const inc = { successes: 1, responseCount: 1, totalResponseMs: responseMs };
-                inc[`byChallenge.${challenge.id}.successes`] = 1;
-                inc[`byChallenge.${challenge.id}.totalResponseMs`] = responseMs;
-                await statsCol.updateOne({ guildId: String(guild.id) }, { $inc: inc }, { upsert: true });
-            } catch (e) { console.error('minigame stats success error', e); }
+                const campersCol = db.collection('campers');
 
-            const emoji = reward.type === 'coins' ? '💰' : '⭐';
+                // only award / end if this author has a camper record
+                const camper = await campersCol.findOne({ discordId: String(m.author.id) });
+                if (!camper) return; // ignore unregistered users
 
-            const winEmbed = new EmbedBuilder()
-                .setTitle('🏆 Challenge Won!')
-                .setDescription(`${m.author} ${challenge.feedback && challenge.feedback.onWin ? challenge.feedback.onWin : 'won the challenge!'}`)
-                .setColor(color)
-                .addFields(
-                    { name: 'Reward', value: `${reward.amount}x ${emoji}` },
-                    reward.type === 'stars' ? { name: 'Total Stars', value: String(totalStars) } : { name: 'Total Coins', value: String(totalCoins) }
-                );
+                const reward = challenge.reward || { type: 'stars', amount: 1 };
+                const inc = {};
+                if (reward.type === 'stars') inc['inventory.stars'] = reward.amount || 1;
+                if (reward.type === 'coins') inc['inventory.coins'] = reward.amount || 0;
 
-            winnerFound = true;
-            try { await botMsg.delete().catch(() => {}); } catch (e) {}
-            await channel.send({ embeds: [winEmbed] }).catch(() => { });
-            // await channel.send(`${m.author} grabbed the ${reward.amount}x ${emoji}!`).catch(() => { });
-            collector.stop('winner');
-        } catch (e) {
-            console.error('minigame collect error', e);
-        }
-    });
+                // update existing camper (do not create new)
+                await campersCol.updateOne({ discordId: String(m.author.id) }, { $inc: inc }, { upsert: false });
 
-    collector.on('end', async (collected, reason) => {
-        if (!winnerFound) {
-            const expiredEmbed = new EmbedBuilder()
-                .setTitle('⏱️ Challenge Expired')
-                .setDescription(challenge.feedback && challenge.feedback.onExpire ? challenge.feedback.onExpire : 'No one answered in time.')
-                .setColor(0x808080);
-            try { await botMsg.delete().catch(() => {}); } catch (e) {}
-            await channel.send({ embeds: [expiredEmbed] }).catch(() => { });
-            await channel.send(`No winners this time — ${challenge.feedback && challenge.feedback.onExpire ? challenge.feedback.onExpire : 'expired.'}`).catch(() => { });
+                const updated = await campersCol.findOne({ discordId: String(m.author.id) });
+                const totalStars = (updated && updated.inventory && updated.inventory.stars) || 0;
+                const totalCoins = (updated && updated.inventory && updated.inventory.coins) || 0;
 
-            // update stats: failure
-            try {
-                const statsCol = db.collection('minigame_stats');
-                const inc = { failures: 1 };
-                inc[`byChallenge.${challenge.id}.failures`] = 1;
-                await statsCol.updateOne({ guildId: String(guild.id) }, { $inc: inc }, { upsert: true });
-            } catch (e) { console.error('minigame stats failure error', e); }
-        }
+                // update stats: successes and response time
+                try {
+                    const statsCol = db.collection('minigame_stats');
+                    const responseMs = (m.createdTimestamp || Date.now()) - (botMsg.createdTimestamp || Date.now());
+                    const inc = { successes: 1, responseCount: 1, totalResponseMs: responseMs };
+                    inc[`byChallenge.${challenge.id}.successes`] = 1;
+                    inc[`byChallenge.${challenge.id}.totalResponseMs`] = responseMs;
+                    await statsCol.updateOne({ guildId: String(guild.id) }, { $inc: inc }, { upsert: true });
+                } catch (e) { console.error('minigame stats success error', e); }
+
+                const emoji = reward.type === 'coins' ? '💰' : '⭐';
+
+                const winEmbed = new EmbedBuilder()
+                    .setTitle('🏆 Challenge Won!')
+                    .setDescription(`${m.author} ${challenge.feedback && challenge.feedback.onWin ? challenge.feedback.onWin : 'won the challenge!'}`)
+                    .setColor(color)
+                    .addFields(
+                        { name: 'Reward', value: `${reward.amount}x ${emoji}` },
+                        reward.type === 'stars' ? { name: 'Total Stars', value: String(totalStars) } : { name: 'Total Coins', value: String(totalCoins) }
+                    );
+
+                winnerFound = true;
+                try { await botMsg.delete().catch(() => {}); } catch (e) {}
+                await channel.send({ embeds: [winEmbed] }).catch(() => { });
+                collector.stop('winner');
+            } catch (e) {
+                console.error('minigame collect error', e);
+            }
+        });
+
+        collector.on('end', async (collected, reason) => {
+            if (!winnerFound) {
+                const expiredEmbed = new EmbedBuilder()
+                    .setTitle('⏱️ Challenge Expired')
+                    .setDescription(challenge.feedback && challenge.feedback.onExpire ? challenge.feedback.onExpire : 'No one answered in time.')
+                    .setColor(0x808080);
+                try { await botMsg.delete().catch(() => {}); } catch (e) {}
+                await channel.send({ embeds: [expiredEmbed] }).catch(() => { });
+                await channel.send(`No winners this time — ${challenge.feedback && challenge.feedback.onExpire ? challenge.feedback.onExpire : 'expired.'}`).catch(() => { });
+
+                // update stats: failure
+                try {
+                    const statsCol = db.collection('minigame_stats');
+                    const inc = { failures: 1 };
+                    inc[`byChallenge.${challenge.id}.failures`] = 1;
+                    await statsCol.updateOne({ guildId: String(guild.id) }, { $inc: inc }, { upsert: true });
+                } catch (e) { console.error('minigame stats failure error', e); }
+            }
+            resolve();
+        });
     });
 }
 
@@ -169,27 +159,27 @@ module.exports = {
         try {
             const db = await connectToMongo();
 
-            async function scheduleForToday() {
-                const now = Date.now();
-                const tomorrow = new Date();
-                tomorrow.setHours(24, 0, 0, 0);
-                const endMs = tomorrow.getTime();
-                const remainingMs = endMs - now;
-                const count = Math.floor(Math.random() * (MAX_DROPS - MIN_DROPS + 1)) + MIN_DROPS;
-                const times = pickNDistinctTimes(count, now + 5000, endMs - 60 * 1000);
-                for (const t of times) {
-                    const delay = t - now;
-                    setTimeout(async () => {
-                        for (const guild of client.guilds.cache.values()) {
-                            try { await postChallengeToGuild(guild); } catch (e) { console.error('posting challenge error', e); }
-                        }
-                    }, delay);
+            // continuous scheduler: post one batch, wait for all to finish, then wait 1-3 hours and repeat
+            async function continuousScheduler() {
+                const minMs = 1 * 60 * 60 * 1000; // 1 hour
+                const maxMs = 3 * 60 * 60 * 1000; // 3 hours
+                while (true) {
+                    const promises = [];
+                    for (const guild of client.guilds.cache.values()) {
+                        try {
+                            const p = postChallengeToGuild(guild);
+                            if (p && typeof p.then === 'function') promises.push(p);
+                        } catch (e) { console.error('posting challenge error', e); }
+                    }
+
+                    try { await Promise.all(promises); } catch (e) { console.error('error waiting for challenges to finish', e); }
+
+                    const delay = minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
+                    await new Promise(r => setTimeout(r, delay));
                 }
-                // schedule next day's schedule at midnight
-                setTimeout(scheduleForToday, remainingMs + 2000);
             }
 
-            scheduleForToday();
+            continuousScheduler();
             // run one immediate minigame drop on startup
             for (const guild of client.guilds.cache.values()) {
                 // try { await postChallengeToGuild(guild); } catch (e) { console.error('posting immediate challenge error', e); }
