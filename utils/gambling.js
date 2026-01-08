@@ -155,8 +155,12 @@ async function startGamble(interaction, game, betType, betAmount) {
     // deduct immediately
     await campers.updateOne({ _id: player._id }, { $inc: { ['inventory.' + betType]: -betAmount } });
 
+    // store player's inventory after deducting the bet so we can compute actual changes later
+    const afterDeduct = await campers.findOne({ _id: player._id });
+    const startInventory = (afterDeduct && afterDeduct.inventory && typeof afterDeduct.inventory[betType] === 'number') ? afterDeduct.inventory[betType] : 0;
+
     const sessionId = randomUUID();
-    const session = { id: sessionId, userId: interaction.user.id, guildId: interaction.guildId, game, bet: betAmount, betType, refundOnTimeout: true };
+    const session = { id: sessionId, userId: interaction.user.id, guildId: interaction.guildId, game, bet: betAmount, betType, refundOnTimeout: true, startInventory };
     sessions.set(sessionId, session);
     session.timeout = makeTimeout(sessionId);
 
@@ -382,16 +386,20 @@ async function handleButtonInteraction(customId, interaction) {
             const updatedPlayer = await campers.findOne({ _id: player._id });
             const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
 
+            // compute actual change since the bet was deducted
+            const startInv = (session && typeof session.startInventory === 'number') ? session.startInventory : 0;
+            const actualChange = remaining - startInv;
+
             const assetsDir = path.join(__dirname, '..', 'assets', 'cards');
             const revealBase = isGold ? `gold_${winning}` : `reveal_${winning}`;
             const revealPath = findImage(assetsDir, revealBase);
             const embed = new EmbedBuilder().setTitle('Card Result').setColor(won ? 0x00FF00 : 0xFF0000);
             if (thumbnail) embed.setThumbnail(thumbnail);
-            embed.setDescription(won ? `You picked ${pick} — You won ${payout} ${session.betType}!` : `You picked ${pick}, but the jester evades you. Better luck next time.`);
+            embed.setDescription(won ? `You picked ${pick} — You won ${actualChange} ${session.betType}!` : `You picked ${pick}, but the jester evades you. Better luck next time.`);
             // include winnings and remaining in embed fields
             if (won) {
                 embed.addFields(
-                    { name: 'Winnings', value: `+${payout} ${session.betType}`, inline: true },
+                    { name: 'Winnings', value: `+${actualChange} ${session.betType}`, inline: true },
                     { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true }
                 );
             } else {
@@ -403,7 +411,7 @@ async function handleButtonInteraction(customId, interaction) {
             try { await session.message.edit({ embeds: [embed], files: revealPath ? [{ attachment: revealPath, name: path.basename(revealPath) }] : [], components: [] }); } catch (e) {}
 
             sessions.delete(sessionId);
-            await interaction.reply({ content: won ? `You won ${payout} ${session.betType}! You now have ${remaining} ${session.betType}.` : `You lost ${session.bet} ${session.betType}. You now have ${remaining} ${session.betType}.`, ephemeral: true });
+            await interaction.reply({ content: won ? `You won ${actualChange} ${session.betType}! You now have ${remaining} ${session.betType}.` : `You lost ${session.bet} ${session.betType}. You now have ${remaining} ${session.betType}.`, ephemeral: true });
             return true;
         }
 
@@ -459,18 +467,22 @@ async function handleButtonInteraction(customId, interaction) {
                     await gambleCol.updateOne({ _id: 'global' }, { $inc: { 'stats.bjWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet } }, { upsert: true });
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
-                    const embed = new EmbedBuilder().setTitle('Blackjack — You Win').setDescription(renderBlackjack(state) + `\nYou win ${actualPaid} ${session.betType}`).setColor(0x00FF00);
+                    const startInv = (session && typeof session.startInventory === 'number') ? session.startInventory : 0;
+                    const actualChange = remaining - startInv;
+                    const embed = new EmbedBuilder().setTitle('Blackjack — You Win').setDescription(renderBlackjack(state) + `\nYou win ${actualChange} ${session.betType}`).setColor(0x00FF00);
                     if (thumbnail) embed.setThumbnail(thumbnail);
-                    embed.addFields({ name: 'Winnings', value: `+${actualPaid} ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
+                    embed.addFields({ name: 'Winnings', value: `+${actualChange} ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
                     try { await session.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
-                    await interaction.reply({ content: `You win ${actualPaid} ${session.betType}! You now have ${remaining} ${session.betType}.`, ephemeral: true });
+                    await interaction.reply({ content: `You win ${actualChange} ${session.betType}! You now have ${remaining} ${session.betType}.`, ephemeral: true });
                 } else if (result === 'push') {
                     await campers.updateOne({ _id: player._id }, { $inc: { ['inventory.' + session.betType]: session.bet } });
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
+                    const startInv = (session && typeof session.startInventory === 'number') ? session.startInventory : 0;
+                    const actualChange = remaining - startInv;
                     const embed = new EmbedBuilder().setTitle('Blackjack — Push').setDescription(renderBlackjack(state) + `\nPush. Your bet is returned.`).setColor(0xFFFF00);
                     if (thumbnail) embed.setThumbnail(thumbnail);
-                    embed.addFields({ name: 'Winnings', value: `0 ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
+                    embed.addFields({ name: 'Winnings', value: `+${actualChange} ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
                     try { await session.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
                     await interaction.reply({ content: `Push — your bet was returned. You now have ${remaining} ${session.betType}.`, ephemeral: true });
                 } else {
@@ -598,7 +610,9 @@ async function handleButtonInteraction(customId, interaction) {
                 updatedPlayer = await campers.findOne({ discordId: session.userId });
                 remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
             }
-            embed.addFields({ name: 'Winnings', value: result === 'win' ? `+${actualPaid || 0} ${session.betType}` : `0 ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
+            const startInv = (session && typeof session.startInventory === 'number') ? session.startInventory : 0;
+            const actualChange = remaining - startInv;
+            embed.addFields({ name: 'Winnings', value: result === 'win' ? `+${actualChange || 0} ${session.betType}` : `0 ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
             try { await session.message.edit({ embeds: [embed], components: [], files: [ ...(playerImg ? [{ attachment: playerImg, name: path.basename(playerImg) }] : []), ...(botImg ? [{ attachment: botImg, name: path.basename(botImg) }] : []) ] }); } catch (e) {}
             sessions.delete(session.id);
             await interaction.reply({ content: `${humanResult} You now have ${remaining || 0} ${session.betType}.`, ephemeral: true });
