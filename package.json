@@ -4,7 +4,8 @@
   "description": "An example application - make sure to configure this yourself.",
   "main": "bot.js",
   "scripts": {
-    "start": "node deploy-commands.js && node bot.js"
+    "build": "node deploy-commands.js",
+    "start": "node bot.js"
   },
   "author": "Pebblehost",
   "license": "ISC",
