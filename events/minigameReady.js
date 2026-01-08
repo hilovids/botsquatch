@@ -4,8 +4,8 @@ const { pickRandomChallenge } = require('../utils/minigameBank');
 const { startDailyNotifier, startDailyCamperRefresh } = require('../utils/houseManager');
 
 // how many drops per day (random between these)
-const MIN_DROPS = 6;
-const MAX_DROPS = 10;
+const MIN_DROPS = 10;
+const MAX_DROPS = 12;
 // give players 1 minute to respond (in ms)
 const RESPONSE_TIME_MS = 1 * 60 * 1000;
 
