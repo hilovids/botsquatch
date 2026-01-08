@@ -226,7 +226,7 @@ async function startGamble(interaction, game, betType, betAmount) {
     if (game === 'rps') {
         const totalLeft = (gambleState.rocks || 0) + (gambleState.papers || 0) + (gambleState.scissors || 0) + (gambleState.elderHand || 0);
         session.state = { botCounts: gambleState, playerChoice: null };
-        const embed = new EmbedBuilder().setTitle('Rock Paper Scissors').setDescription(`The machine hums. It has **${totalLeft}** plays remaining today.`).setColor(embedColor);
+        const embed = new EmbedBuilder().setTitle('Rock Paper Scissors').setDescription(`Bigfoot flips through his deck. It has **${totalLeft}** cards left in it.`).setColor(embedColor);
         if (thumbnail) embed.setThumbnail(thumbnail);
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`gamble:${sessionId}:rps_rock`).setLabel('Rock').setStyle(ButtonStyle.Primary),
@@ -542,9 +542,9 @@ async function handleButtonInteraction(customId, interaction) {
 
             // human-friendly result text
             const displayChoice = choice.charAt(0).toUpperCase() + choice.slice(1);
-            const displayBot = (botChoice === 'elder') ? 'Elder Hand' : (botChoice ? (botChoice.charAt(0).toUpperCase() + botChoice.slice(1)) : 'Unknown');
+            const displayBot = (botChoice === 'elder') ? 'Hand of the Elder Beast' : (botChoice ? (botChoice.charAt(0).toUpperCase() + botChoice.slice(1)) : 'Unknown');
             const humanResult = result === 'win' ? 'You won!' : result === 'lose' ? 'You lost.' : "It's a draw.";
-            const embed = new EmbedBuilder().setTitle('Rock Paper Scissors').setDescription(`You chose **${displayChoice}**. Machine chose **${displayBot}**. ${humanResult}`).setColor(result === 'win' ? 0x00FF00 : result === 'lose' ? 0xFF0000 : 0xFFFF00);
+            const embed = new EmbedBuilder().setTitle('Rock Paper Scissors').setDescription(`You chose **${displayChoice}**. Bigfoot chose **${displayBot}**. ${humanResult}`).setColor(result === 'win' ? 0x00FF00 : result === 'lose' ? 0xFF0000 : 0xFFFF00);
             if (thumbnail) embed.setThumbnail(thumbnail);
             // ensure we have the player's current inventory for display (covers draw case too)
             if (typeof updatedPlayer === 'undefined') {
