@@ -40,4 +40,6 @@ for (const file of eventFiles) {
 	}
 }
 
+console.log(`Token: ${token ? 'Loaded' : 'Not Found'}`);
+
 client.login(token);
