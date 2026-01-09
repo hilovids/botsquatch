@@ -1,5 +1,7 @@
 const { Events, EmbedBuilder, Client } = require('discord.js');
 const { connectToMongo } = require('../utils/mongodbUtil');
+const fs = require('fs');
+const path = require('path');
 const { pickRandomChallenge } = require('../utils/minigameBank');
 const { startDailyNotifier, startDailyCamperRefresh } = require('../utils/houseManager');
 
@@ -60,9 +62,37 @@ async function postChallengeToGuild(guild) {
         .setColor(color)
         .setFooter({ text: `Respond within ${Math.floor(RESPONSE_TIME_MS / 1000)} seconds to win!` });
 
-    if (challenge.prompt && challenge.prompt.imageUrl) embed.setImage(challenge.prompt.imageUrl);
+    // support local glyph assets placed in assets/glyphs
+    const files = [];
+    let sentEmbed = embed;
+    // check several possible properties for an asset filename
+    const candidate = (challenge && challenge.prompt && (challenge.prompt.imageAsset || challenge.prompt.imageFile)) || challenge.imageAsset || challenge.imageFile || null;
+    const preImageLine = 'An ancient tablet was found in the crystal caverns carved with this glyph...';
+    if (candidate && typeof candidate === 'string') {
+        const filename = path.basename(candidate);
+        const assetPath = path.join(__dirname, '..', 'assets', 'glyphs', filename);
+        try {
+            if (fs.existsSync(assetPath)) {
+                // add pre-image descriptive line to the embed description
+                try { sentEmbed = embed.setDescription((challenge.prompt && challenge.prompt.text ? challenge.prompt.text + '\n\n' : '') + preImageLine); } catch (e) {}
+                files.push({ attachment: assetPath, name: filename });
+                sentEmbed = embed.setImage(`attachment://${filename}`);
+            } else if (challenge.prompt && challenge.prompt.imageUrl) {
+                try { sentEmbed = embed.setDescription((challenge.prompt && challenge.prompt.text ? challenge.prompt.text + '\n\n' : '') + preImageLine); } catch (e) {}
+                sentEmbed = embed.setImage(challenge.prompt.imageUrl);
+            }
+        } catch (e) {
+            if (challenge.prompt && challenge.prompt.imageUrl) {
+                try { sentEmbed = embed.setDescription((challenge.prompt && challenge.prompt.text ? challenge.prompt.text + '\n\n' : '') + preImageLine); } catch (e) {}
+                sentEmbed = embed.setImage(challenge.prompt.imageUrl);
+            }
+        }
+    } else if (challenge.prompt && challenge.prompt.imageUrl) {
+        try { sentEmbed = embed.setDescription((challenge.prompt && challenge.prompt.text ? challenge.prompt.text + '\n\n' : '') + preImageLine); } catch (e) {}
+        sentEmbed = embed.setImage(challenge.prompt.imageUrl);
+    }
 
-    const botMsg = await channel.send({ embeds: [embed] }).catch(() => null);
+    const botMsg = await channel.send({ embeds: [sentEmbed], files: files.length ? files : undefined }).catch(() => null);
     if (!botMsg) return;
 
     // record that a challenge was posted for stats
