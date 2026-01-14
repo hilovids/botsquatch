@@ -539,7 +539,7 @@ module.exports = {
 					const embed = new EmbedBuilder()
 						.setColor(0x1e487a)
 						.setTitle('Lake Yazzy — Impassable')
-						.setDescription(`A heavy fog falls over Lake Yazzy, making it impossible to tread. The winds will change in <t:${unix}:R>...`)
+						.setDescription(`A heavy fog falls over Lake Yazzy, making it impossible to tread. The winds will change <t:${unix}:R>...`)
 						.setTimestamp();
 						// reply ephemeral so users see the message privately
 					if (interaction.replied || interaction.deferred) {
