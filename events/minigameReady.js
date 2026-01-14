@@ -209,7 +209,7 @@ module.exports = {
                 }
             }
 
-            // continuousScheduler();
+            continuousScheduler();
 
             // start daily house notifier
             try { startDailyNotifier(client); } catch (e) { console.error('startDailyNotifier error', e); }
