@@ -3,7 +3,7 @@ const { connectToMongo } = require('../../utils/mongodbUtil');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('stats')
+        .setName('inventory')
         .setDescription("View your player stats: curses, inventory, badges, and more"),
 
     async execute(interaction) {

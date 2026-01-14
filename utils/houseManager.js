@@ -33,17 +33,17 @@ async function performWeeklyPayout() {
 
     const now = new Date();
     const last = doc.lastPayoutAt ? new Date(doc.lastPayoutAt) : new Date(0);
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
-    if (now - last < sevenDays) return { ok: false, reason: 'not due yet' };
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    if (now - last < threeDays) return { ok: false, reason: 'not due yet' };
 
     const pool = doc.starsPool || 0;
-    if (pool <= 10) {
+    if (pool <= 30) {
         // nothing to pay out, but update lastPayoutAt
         await col.updateOne({ _id: 'global' }, { $set: { lastPayoutAt: now } });
         return { ok: true, paid: 0, recipient: null };
     }
 
-    const toPay = pool - 10;
+    const toPay = pool - 30;
 
     // try to find the receiver camper (hilovids or hilo)
     const receiver = await campers.findOne({ $or: [ { username: /hilovids/i }, { displayName: /hilo/i }, { username: /hilo/i } ] });
@@ -54,17 +54,15 @@ async function performWeeklyPayout() {
     }
 
     await campers.updateOne({ _id: receiver._id }, { $inc: { 'inventory.stars': toPay } });
-    // advance nextWeeklyCashoutAt to next Sunday midnight
-    function computeNextSundayMidnight(from) {
+    // advance nextWeeklyCashoutAt to next 3-day midnight
+    function computeNext3DayMidnight(from) {
         const next = new Date(from);
         next.setHours(0,0,0,0);
-        const day = next.getDay();
-        const daysUntil = (7 - day) % 7 || 7;
-        next.setDate(next.getDate() + daysUntil);
+        next.setDate(next.getDate() + 3);
         return next;
     }
-    const nextWeekly = computeNextSundayMidnight(now);
-    await col.updateOne({ _id: 'global' }, { $set: { starsPool: 10, lastPayoutAt: now, lastPayoutRecipient: receiver._id, nextWeeklyCashoutAt: nextWeekly } });
+    const nextWeekly = computeNext3DayMidnight(now);
+    await col.updateOne({ _id: 'global' }, { $set: { starsPool: 30, lastPayoutAt: now, lastPayoutRecipient: receiver._id, nextWeeklyCashoutAt: nextWeekly } });
 
     return { ok: true, paid: toPay, recipient: receiver._id };
 }

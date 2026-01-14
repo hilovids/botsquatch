@@ -522,14 +522,51 @@ module.exports = {
 			return;
 		}
 
+		// Global temporary lockdown: block all `seachart*` commands for non-admin campers
+		try {
+			if (command && command.data && typeof command.data.name === 'string' && command.data.name.startsWith('seachart')) {
+				const db = await connectToMongo();
+				const campersCol = db.collection('campers');
+				const camper = await campersCol.findOne({ discordId: String(interaction.user.id) });
+				const isAdmin = camper && camper.admin;
+				if (!isAdmin) {
+					// compute next Feb 1st (local server time)
+					const now = new Date();
+					let target = new Date(now.getFullYear(), 1, 1, 0, 0, 0);
+					if (now >= target) target = new Date(now.getFullYear() + 1, 1, 1, 0, 0, 0);
+					const unix = Math.floor(target.getTime() / 1000);
+					const { EmbedBuilder } = require('discord.js');
+					const embed = new EmbedBuilder()
+						.setColor(0x1e487a)
+						.setTitle('Lake Yazzy — Impassable')
+						.setDescription(`A heavy fog falls over Lake Yazzy, making it impossible to tread. The winds will change in <t:${unix}:R>...`)
+						.setTimestamp();
+						// reply ephemeral so users see the message privately
+					if (interaction.replied || interaction.deferred) {
+						await interaction.followUp({ embeds: [embed], ephemeral: true }).catch(err => { if (!err || err.code !== 10062) console.error('followUp error', err); });
+					} else {
+						await interaction.reply({ embeds: [embed], ephemeral: true }).catch(err => { if (!err || err.code !== 10062) console.error('reply error', err); });
+					}
+					return; // block execution
+				}
+			}
+		} catch (lockErr) {
+			console.error('seachart lock check error', lockErr);
+		}
+
 		try {
 			await command.execute(interaction);
 		} catch (error) {
 			console.error(error);
-			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-			} else {
-				await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			try {
+				if (interaction.replied || interaction.deferred) {
+					await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true }).catch(err => { if (!err || err.code !== 10062) console.error('followUp error', err); });
+				} else {
+					await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true }).catch(err => { if (!err || err.code !== 10062) console.error('reply error', err); });
+				}
+			} catch (e) {
+				// swallow Unknown Interaction errors (10062) which simply mean the interaction token expired
+				if (!e || e.code !== 10062) console.error('error sending error-reply', e);
 			}
 		}
 	},

@@ -106,6 +106,21 @@ module.exports = {
             if (player.interview && player.interview.goal) embed.addFields({ name: 'Goal', value: String(player.interview.goal).slice(0, 1024) });
             if (player.interview && player.interview.strategy) embed.addFields({ name: 'Strategy', value: String(player.interview.strategy).slice(0, 1024) });
 
+            // Add RPS stats if present
+            const rpsWins = player.rpsWins || 0;
+            const rpsLosses = player.rpsLosses || 0;
+            const rpsChoices = player.rpsChoices || {};
+            const rock = rpsChoices.rock || 0;
+            const paper = rpsChoices.paper || 0;
+            const scissors = rpsChoices.scissors || 0;
+            const hand = rpsChoices.hand || 0;
+            const totalChoices = rock + paper + scissors + hand;
+            function pct(n) { if (!totalChoices) return '0%'; return `${((n / totalChoices) * 100).toFixed(1)}%`; }
+            embed.addFields(
+                { name: 'RPS Wins/Losses', value: `${rpsWins} / ${rpsLosses}`, inline: true },
+                { name: 'Choice % (R/P/S/H)', value: `✊ ${pct(rock)} / ✋ ${pct(paper)} / ✌️ ${pct(scissors)} / 🖐️ ${pct(hand)}`, inline: true }
+            );
+
             await interaction.editReply({ embeds: [embed], files: attachment ? [attachment] : [] });
 
         } catch (err) {

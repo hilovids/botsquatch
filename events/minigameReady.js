@@ -209,11 +209,8 @@ module.exports = {
                 }
             }
 
-            continuousScheduler();
-            // run one immediate minigame drop on startup
-            for (const guild of client.guilds.cache.values()) {
-                // try { await postChallengeToGuild(guild); } catch (e) { console.error('posting immediate challenge error', e); }
-            }
+            // continuousScheduler();
+
             // start daily house notifier
             try { startDailyNotifier(client); } catch (e) { console.error('startDailyNotifier error', e); }
             try { startDailyCamperRefresh(); } catch (e) { console.error('startDailyCamperRefresh error', e); }

@@ -49,12 +49,10 @@ async function ensureGambleState(db) {
         return next;
     }
 
-    function computeNextSundayMidnight(now) {
+    function computeNext3DayMidnight(now) {
         const next = new Date(now);
         next.setHours(0,0,0,0);
-        const day = next.getDay(); // 0 = Sunday
-        const daysUntil = (7 - day) % 7 || 7; // ensure next Sunday (not today)
-        next.setDate(next.getDate() + daysUntil);
+        next.setDate(next.getDate() + 3);
         return next;
     }
 
@@ -63,7 +61,7 @@ async function ensureGambleState(db) {
     if (!doc) {
         const seed = {
             _id: 'global',
-            starsPool: 10,
+            starsPool: 30,
             rocks: 10,
             papers: 10,
             scissors: 10,
@@ -72,7 +70,10 @@ async function ensureGambleState(db) {
             lastPayoutRecipient: null,
             // persistent reset timestamps so a bot restart doesn't lose schedule
             nextDailyResetAt: computeNextMidnight(now),
-            nextWeeklyCashoutAt: computeNextSundayMidnight(now),
+            nextWeeklyCashoutAt: computeNext3DayMidnight(now),
+            // blackjack loss-streak protection fields
+            bjLossStreak: 0,
+            bjLossStreakThreshold: _randInt(3) + 2,
             stats: {
                 cardWins: 0,
                 cardLosses: 0,
@@ -91,7 +92,7 @@ async function ensureGambleState(db) {
     // If timestamps are missing or in the past, refresh them so timers survive restarts
     const updates = {};
     if (!doc.nextDailyResetAt || new Date(doc.nextDailyResetAt) <= now) updates.nextDailyResetAt = computeNextMidnight(now);
-    if (!doc.nextWeeklyCashoutAt || new Date(doc.nextWeeklyCashoutAt) <= now) updates.nextWeeklyCashoutAt = computeNextSundayMidnight(now);
+    if (!doc.nextWeeklyCashoutAt || new Date(doc.nextWeeklyCashoutAt) <= now) updates.nextWeeklyCashoutAt = computeNext3DayMidnight(now);
     if (Object.keys(updates).length > 0) {
         await col.updateOne({ _id: 'global' }, { $set: updates });
         doc = await col.findOne({ _id: 'global' });
@@ -182,7 +183,7 @@ async function startGamble(interaction, game, betType, betAmount) {
         const embed1 = new EmbedBuilder().setTitle('Card Shuffle').setDescription('A mysterious card appears...').setColor(embedColor);
         if (thumbnail) embed1.setThumbnail(thumbnail);
         // warn if potential payout exceeds house pool
-        const potential = isGold ? Math.floor(betAmount * 25) : Math.floor(betAmount * 2.5);
+        const potential = isGold ? Math.floor(betAmount * 30) : Math.floor(betAmount * 2.9);
         if (gambleState && typeof gambleState.starsPool === 'number' && potential > gambleState.starsPool) {
             embed1.setDescription(embed1.data.description + `\n\nNote: The house has only ${gambleState.starsPool} stars; maximum payout for this game is ${gambleState.starsPool} stars. If multiple players finish at once, the first to complete receives the payout.`);
         }
@@ -257,7 +258,7 @@ async function startGamble(interaction, game, betType, betAmount) {
         session.state = { deck, playerHand, dealerHand, finished: false };
 
         // Warn if potential payout exceeds house pool
-        const potentialBJ = Math.floor(betAmount * 2);
+        const potentialBJ = Math.round(betAmount * 1.9);
         let desc = renderBlackjack(session.state);
         if (gambleState && typeof gambleState.starsPool === 'number' && potentialBJ > gambleState.starsPool) {
             desc += `\n\nNote: The house has only ${gambleState.starsPool} stars; maximum payout is ${gambleState.starsPool} stars. If multiple players finish at once, the first to complete receives the payout.`;
@@ -376,7 +377,7 @@ async function handleButtonInteraction(customId, interaction) {
             const won = (pick === winning);
             let payout = 0;
             if (won) {
-                const desired = isGold ? Math.floor(session.bet * 25) : Math.floor(session.bet * 2.5);
+                const desired = isGold ? Math.floor(session.bet * 30) : Math.floor(session.bet * 2.9);
                 const stateDoc = await gamblingCol.findOne({ _id: 'global' });
                 const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
                 const actualPaid = Math.min(desired, Math.max(0, pool));
@@ -432,6 +433,7 @@ async function handleButtonInteraction(customId, interaction) {
             const campers = db.collection('campers');
             const player = await campers.findOne({ discordId: session.userId });
             const state = session.state;
+            const gambleCol = db.collection('gambling_state');
             if (!state || state.finished) {
                 await interaction.reply({ content: 'This game is already finished.', ephemeral: true });
                 return true;
@@ -444,6 +446,7 @@ async function handleButtonInteraction(customId, interaction) {
                         // deduct player's bet on bust and add to house
                         await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: -session.bet }, 'bj_bust_player_deduct');
                         await applyGambleInc(db, { starsPool: session.bet, 'stats.bjLosses': 1, 'stats.totalBets': session.bet }, 'bj_bust');
+                        try { await gambleCol.updateOne({ _id: 'global' }, { $set: { bjLossStreak: 0 } }); } catch (e) { }
                     const embed = new EmbedBuilder().setTitle('Blackjack — Busted').setDescription(renderBlackjack(state)).setColor(0xFF0000);
                     if (thumbnail) embed.setThumbnail(thumbnail);
                     // fetch updated player inventory
@@ -462,25 +465,75 @@ async function handleButtonInteraction(customId, interaction) {
                 while (handValue(state.dealerHand) < 17) state.dealerHand.push(state.deck.pop());
                 state.finished = true;
                 const pVal = handValue(state.playerHand);
-                const dVal = handValue(state.dealerHand);
+                // allow cheating logic before final result determination
+                const gambleCol = db.collection('gambling_state');
+                const stateDocPre = await gambleCol.findOne({ _id: 'global' });
+                let cheated = false;
+                // only attempt to cheat if player is currently beating dealer and streak threshold reached
+                if (pVal <= 21) {
+                    let dVal = handValue(state.dealerHand);
+                    if (pVal > dVal && stateDocPre && typeof stateDocPre.bjLossStreakThreshold === 'number' && (stateDocPre.bjLossStreak || 0) >= stateDocPre.bjLossStreakThreshold) {
+                        // try to find a single card in deck that makes dealer >= pVal without busting
+                        const deck = state.deck;
+                        let picked = -1;
+                        for (let i = 0; i < deck.length; i++) {
+                            const candidate = deck[i];
+                            const tempHand = state.dealerHand.concat([candidate]);
+                            const tv = handValue(tempHand);
+                            if (tv <= 21 && tv >= pVal) { picked = i; break; }
+                        }
+                        // if no single card, try two-card combo
+                        if (picked === -1) {
+                            for (let i = 0; i < deck.length; i++) {
+                                for (let j = i + 1; j < deck.length; j++) {
+                                    const tempHand = state.dealerHand.concat([deck[i], deck[j]]);
+                                    const tv = handValue(tempHand);
+                                    if (tv <= 21 && tv >= pVal) { picked = [i, j]; break; }
+                                }
+                                if (picked !== -1) break;
+                            }
+                        }
+                        if (picked !== -1) {
+                            // remove card(s) from deck and push to dealer hand
+                            if (Array.isArray(picked)) {
+                                // remove higher index first
+                                const [i, j] = picked;
+                                const hi = j, lo = i;
+                                const cardHi = deck.splice(hi, 1)[0];
+                                const cardLo = deck.splice(lo, 1)[0];
+                                state.dealerHand.push(cardLo);
+                                state.dealerHand.push(cardHi);
+                            } else {
+                                const card = deck.splice(picked, 1)[0];
+                                state.dealerHand.push(card);
+                            }
+                            cheated = true;
+                            // reset streak and set new threshold
+                            const newThresh = _randInt(3) + 2;
+                            try { await gambleCol.updateOne({ _id: 'global' }, { $set: { bjLossStreak: 0, bjLossStreakThreshold: newThresh } }); } catch (e) { console.error('Failed to reset bjLossStreak', e); }
+                        }
+                    }
+                }
+                // final values
+                const pVal2 = handValue(state.playerHand);
+                const dVal2 = handValue(state.dealerHand);
                 let result = 'lose';
-                if (pVal > 21) result = 'lose';
-                else if (dVal > 21) result = 'win';
-                else if (pVal > dVal) result = 'win';
-                else if (pVal === dVal) result = 'push';
+                if (pVal2 > 21) result = 'lose';
+                else if (dVal2 > 21) result = 'win';
+                else if (pVal2 > dVal2) result = 'win';
+                else if (pVal2 === dVal2) result = 'push';
                 else result = 'lose';
 
-                const gambleCol = db.collection('gambling_state');
                 if (result === 'win') {
-                    const desired = Math.floor(session.bet * 2);
+                    const desired = Math.round(session.bet * 1.9);
                     const stateDoc = await gambleCol.findOne({ _id: 'global' });
                     const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
                     const actualPaid = Math.min(desired, Math.max(0, pool));
                     if (actualPaid > 0) {
                         await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: actualPaid }, 'bj_payout');
-                        await applyGambleInc(db, { starsPool: -actualPaid, 'stats.bjWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'bj_win');
+                        await applyGambleInc(db, { starsPool: -actualPaid, 'stats.bjWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet, 'bjLossStreak': 1 }, 'bj_win');
                     } else {
-                        await applyGambleInc(db, { 'stats.bjWins': 1, 'stats.totalPayouts': 0, 'stats.totalBets': session.bet }, 'bj_win_no_pool');
+                        await applyGambleInc(db, { 'stats.bjWins': 1, 'stats.totalPayouts': 0, 'stats.totalBets': session.bet, 'bjLossStreak': 1 }, 'bj_win_no_pool');
                     }
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
@@ -488,12 +541,15 @@ async function handleButtonInteraction(customId, interaction) {
                     const actualChange = remaining - startInv;
                     const embed = new EmbedBuilder().setTitle('Blackjack — You Win').setDescription(renderBlackjack(state) + `\nYou win ${actualChange} ${session.betType}`).setColor(0x00FF00);
                     if (thumbnail) embed.setThumbnail(thumbnail);
+                    if (cheated) embed.setFooter({ text: 'The dealer seemed particularly...lucky.' });
                     embed.addFields({ name: 'Winnings', value: `+${actualChange} ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
                     try { await session.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
                     await interaction.reply({ content: `You win ${actualChange} ${session.betType}! You now have ${remaining} ${session.betType}.`, ephemeral: true });
                 } else if (result === 'push') {
                     // push: no inventory change because bet wasn't deducted upfront; just record the bet
                     await applyGambleInc(db, { 'stats.totalBets': session.bet }, 'bj_push');
+                    // reset streak on non-player-win outcomes
+                    try { await gambleCol.updateOne({ _id: 'global' }, { $set: { bjLossStreak: 0 } }); } catch (e) { }
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
                     const startInv = (session && typeof session.startInventory === 'number') ? session.startInventory : 0;
@@ -507,6 +563,8 @@ async function handleButtonInteraction(customId, interaction) {
                     // player loses: deduct bet and add to house pool
                     await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: -session.bet }, 'bj_loss_player_deduct');
                     await applyGambleInc(db, { starsPool: session.bet, 'stats.bjLosses': 1, 'stats.totalBets': session.bet }, 'bj_loss');
+                    // reset streak on player loss
+                    try { await gambleCol.updateOne({ _id: 'global' }, { $set: { bjLossStreak: 0 } }); } catch (e) { }
                     const updatedPlayer = await campers.findOne({ _id: player._id });
                     const remaining = (updatedPlayer && updatedPlayer.inventory && typeof updatedPlayer.inventory[session.betType] === 'number') ? updatedPlayer.inventory[session.betType] : 0;
                     const embed = new EmbedBuilder().setTitle('Blackjack — You Lose').setDescription(renderBlackjack(state)).setColor(0xFF0000);
@@ -557,7 +615,7 @@ async function handleButtonInteraction(customId, interaction) {
             await applyPlayerInc(campers, { _id: playerDoc._id }, { ['inventory.' + playerField]: -1 }, 'rps_consume_card');
             const gambleCol = db.collection('gambling_state');
             let stateDoc = await gambleCol.findOne({ _id: 'global' });
-            if (!stateDoc) stateDoc = { rocks:10,papers:10,scissors:10,elderHand:1, starsPool:10 };
+            if (!stateDoc) stateDoc = { rocks:10,papers:10,scissors:10,elderHand:1, starsPool:30 };
 
             const botOptions = [];
             if ((stateDoc.rocks || 0) > 0) botOptions.push('rock');
