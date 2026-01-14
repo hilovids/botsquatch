@@ -92,7 +92,16 @@ async function postChallengeToGuild(guild) {
         sentEmbed = embed.setImage(challenge.prompt.imageUrl);
     }
 
-    const botMsg = await channel.send({ embeds: [sentEmbed], files: files.length ? files : undefined }).catch(() => null);
+    // If configured, ping a role on initial drop for image/quicktime minigames
+    let content = undefined;
+    try {
+        const botPingRole = discordConfig && (discordConfig.bot_ping_role_id);
+        if (botPingRole) {
+            content = `<@&${String(botPingRole)}>`;
+        }
+    } catch (e) { }
+
+    const botMsg = await channel.send({ content: content, embeds: [sentEmbed], files: files.length ? files : undefined }).catch(() => null);
     if (!botMsg) return;
 
     // record that a challenge was posted for stats
