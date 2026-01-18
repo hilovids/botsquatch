@@ -33,8 +33,8 @@ async function performWeeklyPayout() {
 
     const now = new Date();
     const last = doc.lastPayoutAt ? new Date(doc.lastPayoutAt) : new Date(0);
-    const threeDays = 3 * 24 * 60 * 60 * 1000;
-    if (now - last < threeDays) return { ok: false, reason: 'not due yet' };
+    const twoDays = 2 * 24 * 60 * 60 * 1000;
+    if (now - last < twoDays) return { ok: false, reason: 'not due yet' };
 
     const pool = doc.starsPool || 0;
     if (pool <= 30) {
@@ -54,14 +54,14 @@ async function performWeeklyPayout() {
     }
 
     await campers.updateOne({ _id: receiver._id }, { $inc: { 'inventory.stars': toPay } });
-    // advance nextWeeklyCashoutAt to next 3-day midnight
-    function computeNext3DayMidnight(from) {
+    // advance nextWeeklyCashoutAt to next 2-day midnight
+    function computeNext2DayMidnight(from) {
         const next = new Date(from);
         next.setHours(0,0,0,0);
-        next.setDate(next.getDate() + 3);
+        next.setDate(next.getDate() + 2);
         return next;
     }
-    const nextWeekly = computeNext3DayMidnight(now);
+    const nextWeekly = computeNext2DayMidnight(now);
     await col.updateOne({ _id: 'global' }, { $set: { starsPool: 30, lastPayoutAt: now, lastPayoutRecipient: receiver._id, nextWeeklyCashoutAt: nextWeekly } });
 
     return { ok: true, paid: toPay, recipient: receiver._id };
