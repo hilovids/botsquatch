@@ -49,10 +49,10 @@ async function ensureGambleState(db) {
         return next;
     }
 
-    function computeNext3DayMidnight(now) {
+    function computeNext2DayMidnight(now) {
         const next = new Date(now);
         next.setHours(0,0,0,0);
-        next.setDate(next.getDate() + 3);
+        next.setDate(next.getDate() + 2);
         return next;
     }
 
@@ -70,7 +70,7 @@ async function ensureGambleState(db) {
             lastPayoutRecipient: null,
             // persistent reset timestamps so a bot restart doesn't lose schedule
             nextDailyResetAt: computeNextMidnight(now),
-            nextWeeklyCashoutAt: computeNext3DayMidnight(now),
+            nextWeeklyCashoutAt: computeNext2DayMidnight(now),
             // blackjack loss-streak protection fields
             bjLossStreak: 0,
             bjLossStreakThreshold: _randInt(3) + 2,
@@ -92,7 +92,7 @@ async function ensureGambleState(db) {
     // If timestamps are missing or in the past, refresh them so timers survive restarts
     const updates = {};
     if (!doc.nextDailyResetAt || new Date(doc.nextDailyResetAt) <= now) updates.nextDailyResetAt = computeNextMidnight(now);
-    if (!doc.nextWeeklyCashoutAt || new Date(doc.nextWeeklyCashoutAt) <= now) updates.nextWeeklyCashoutAt = computeNext3DayMidnight(now);
+    if (!doc.nextWeeklyCashoutAt || new Date(doc.nextWeeklyCashoutAt) <= now) updates.nextWeeklyCashoutAt = computeNext2DayMidnight(now);
     if (Object.keys(updates).length > 0) {
         await col.updateOne({ _id: 'global' }, { $set: updates });
         doc = await col.findOne({ _id: 'global' });

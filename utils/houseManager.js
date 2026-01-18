@@ -87,24 +87,21 @@ async function startWeeklyWatcher() {
         const doc = await col.findOne({ _id: 'global' });
         if (!doc) return;
         const nextWeekly = doc.nextWeeklyCashoutAt ? new Date(doc.nextWeeklyCashoutAt) : null;
-        const handler = async () => {
-            try {
-                await performWeeklyPayout();
-                await performWeeklyRpsRefill();
-                // refresh doc and reschedule
-                const updated = await col.findOne({ _id: 'global' });
-                const next = updated && updated.nextWeeklyCashoutAt ? new Date(updated.nextWeeklyCashoutAt) : null;
-                if (next) scheduleAt(next, handler);
-            } catch (e) { console.error('weekly watcher handler error', e); }
-        };
+            const handler = async () => {
+                try {
+                    await performHouseMaintenance();
+                    // refresh doc and reschedule
+                    const updated = await col.findOne({ _id: 'global' });
+                    const next = updated && updated.nextWeeklyCashoutAt ? new Date(updated.nextWeeklyCashoutAt) : null;
+                    if (next) scheduleAt(next, handler);
+                } catch (e) { console.error('weekly watcher handler error', e); }
+            };
         if (nextWeekly) scheduleAt(nextWeekly, handler);
     } catch (e) { console.error('startWeeklyWatcher error', e); }
 }
 
 // start watcher automatically
 startWeeklyWatcher();
-
-module.exports = { getResources, performWeeklyPayout, startWeeklyWatcher };
 
 // Post a daily summary to each guild: time until weekly cashout and RPSH counts
 async function startDailyNotifier(client) {
@@ -170,10 +167,9 @@ async function startDailyNotifier(client) {
         } catch (e) { console.error('startDailyNotifier postOnce error', e); }
     }
 
-    // post once immediately
-    // postOnce();
-    // then every 24 hours
-    setInterval(postOnce, 24 * 60 * 60 * 1000);
+    // post once immediately and then every hour (frequent checks for missed updates)
+    postOnce();
+    setInterval(postOnce, 60 * 60 * 1000);
 }
 
 module.exports = { getResources, performWeeklyPayout, startWeeklyWatcher, startDailyNotifier };
@@ -249,14 +245,23 @@ async function performWeeklyRpsRefill() {
     return { ok: true, set: defaults };
 }
 
+// Combined maintenance: payout (every 2 days) and RPSH refill (weekly)
+async function performHouseMaintenance() {
+    try {
+        const payoutRes = await performWeeklyPayout().catch(e => { console.error('performWeeklyPayout error', e); return null; });
+        const rpsRes = await performWeeklyRpsRefill().catch(e => { console.error('performWeeklyRpsRefill error', e); return null; });
+        return { ok: true, payout: payoutRes, rps: rpsRes };
+    } catch (e) { console.error('performHouseMaintenance error', e); return { ok: false, error: String(e) }; }
+}
+
 // call weekly refill from the existing weekly watcher as well
 const _origStartWeeklyWatcher = startWeeklyWatcher;
 function startWeeklyWatcherWithRefill() {
     _origStartWeeklyWatcher();
-    // also run daily check for RPS refill
+    // also run hourly maintenance check for payouts and RPS refill (handles missed events)
     setInterval(async () => {
-        try { await performWeeklyRpsRefill(); } catch (e) { console.error('weekly rps refill error', e); }
-    }, 24 * 60 * 60 * 1000);
+        try { await performHouseMaintenance(); } catch (e) { console.error('house maintenance error', e); }
+    }, 60 * 60 * 1000);
 }
 
 module.exports = { getResources, performWeeklyPayout, startWeeklyWatcher: startWeeklyWatcherWithRefill, startDailyNotifier, startDailyCamperRefresh, performWeeklyRpsRefill, performDailyCamperRefresh };
