@@ -3,7 +3,7 @@ const { connectToMongo } = require('../utils/mongodbUtil');
 const fs = require('fs');
 const path = require('path');
 const { pickRandomChallenge } = require('../utils/minigameBank');
-const { startDailyNotifier, startDailyCamperRefresh } = require('../utils/houseManager');
+const { startWeeklyManager, startDailyNotifier } = require('../utils/houseManager');
 
 // give players 1 minute to respond (in ms)
 const RESPONSE_TIME_MS = 1 * 60 * 1000;
@@ -220,9 +220,10 @@ module.exports = {
 
             continuousScheduler();
 
-            // start daily house notifier
+            // start weekly house manager (runs maintenance daily at 09:00 ET)
+            try { startWeeklyManager({ runOnStart: true }); } catch (e) { console.error('startWeeklyManager error', e); }
+            // start daily notifier (posts a daily embed summary to each guild)
             try { startDailyNotifier(client); } catch (e) { console.error('startDailyNotifier error', e); }
-            try { startDailyCamperRefresh(); } catch (e) { console.error('startDailyCamperRefresh error', e); }
             console.log('Minigame scheduler started (and immediate drop posted)');
         } catch (e) {
             console.error('minigame ready error', e);
