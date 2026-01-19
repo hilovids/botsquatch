@@ -56,14 +56,14 @@ async function performHouseStarRefill() {
 // Combined maintenance operation run weekly by the scheduler
 async function performWeeklyMaintenance() {
     try {
-        // Guard: avoid running more often than every 48 hours
+        // Guard: avoid running more often than every 24 hours
         const now = new Date();
         try {
             const db = await connectToMongo();
             const col = db.collection('gambling_state');
             const state = await col.findOne({ _id: 'global' });
             const last = state && state.lastMaintenanceAt ? new Date(state.lastMaintenanceAt) : new Date(0);
-            const minInterval = 48 * 60 * 60 * 1000; // 48 hours
+            const minInterval = 24 * 60 * 60 * 1000; // 24 hours
             if (now - last < minInterval) {
                 return { ok: false, reason: 'not due' };
             }
@@ -72,19 +72,31 @@ async function performWeeklyMaintenance() {
             console.error('performWeeklyMaintenance: could not read previous maintenance timestamp', e);
         }
 
-        const [rps, campers, stars] = await Promise.allSettled([
-            performWeeklyRpsRefill(),
-            performCamperGrant(),
-            performHouseStarRefill()
-        ]);
-
+        // Redistribute shared starsPool across all campers, reset individual pools to DEFAULTS.houseStars + share
         try {
             const db = await connectToMongo();
             const col = db.collection('gambling_state');
-            await col.updateOne({ _id: 'global' }, { $set: { lastMaintenanceAt: now } }, { upsert: true });
-        } catch (e) { /* non-fatal */ }
+            const campersCol = db.collection('campers');
+            const state = await col.findOne({ _id: 'global' });
+            const shared = (state && typeof state.starsPool === 'number') ? state.starsPool : 0;
+            const totalCampers = await campersCol.countDocuments();
+            const num = Math.max(1, totalCampers);
+            const extraPer = Math.floor(shared / num);
 
-        return { ok: true, rps: rps.status === 'fulfilled' ? rps.value : { ok: false, error: String(rps.reason) }, campers: campers.status === 'fulfilled' ? campers.value : { ok: false, error: String(campers.reason) }, stars: stars.status === 'fulfilled' ? stars.value : { ok: false, error: String(stars.reason) } };
+            // set each camper's gamblePool to base + extraPer
+            await campersCol.updateMany({}, { $set: { gamblePool: DEFAULTS.houseStars + extraPer } });
+
+            // leave remainder in shared pool
+            const remainder = shared - (extraPer * num);
+            await col.updateOne({ _id: 'global' }, { $set: { starsPool: remainder, lastMaintenanceAt: now } }, { upsert: true });
+
+            // also perform house RPS refill and grant R/P/S to campers in parallel
+            const [rpsRes, grantRes] = await Promise.allSettled([performWeeklyRpsRefill(), performCamperGrant()]);
+            return { ok: true, redistributed: { perCamperExtra: extraPer, remainder }, rps: rpsRes.status === 'fulfilled' ? rpsRes.value : { ok: false, error: String(rpsRes.reason) }, campers: grantRes.status === 'fulfilled' ? grantRes.value : { ok: false, error: String(grantRes.reason) } };
+        } catch (e) {
+            console.error('performWeeklyMaintenance redistribution error', e);
+            return { ok: false, error: String(e) };
+        }
     } catch (e) { console.error('performWeeklyMaintenance error', e); return { ok: false, error: String(e) }; }
 }
 
@@ -144,17 +156,24 @@ async function startDailyNotifier(client) {
                     const mmTotalResponse = mm && mm.totalResponseMs ? mm.totalResponseMs : 0;
                     const mmAvgMs = mmSuccesses > 0 ? Math.round(mmTotalResponse / mmSuccesses) : 0;
 
-                    const gStats = doc.stats || {};
+                            const gStats = doc.stats || {};
+                            // compute per-player earnable stars: base + redistributed share
+                            const campersCount = await db.collection('campers').countDocuments();
+                            const num = Math.max(1, campersCount);
+                            const shared = (doc && typeof doc.starsPool === 'number') ? doc.starsPool : 0;
+                            const extraPer = Math.floor(shared / num);
+                            const perPlayer = DEFAULTS.houseStars + extraPer;
 
-                    const embed = new EmbedBuilder()
-                        .setTitle('House Daily Update')
-                        .setColor(color)
-                        .addFields(
-                            { name: 'Star Pool', value: String(doc.starsPool || 0), inline: true },
-                            { name: 'RPSH Cards', value: `R:${rocks} P:${papers} S:${scissors} H:${elder}`, inline: true },
-                            { name: 'MiniGame (guild)', value: `Successes: ${mmSuccesses}  Failures: ${mmFailures}\nAvg Response: ${mmSuccesses ? (mmAvgMs/1000).toFixed(2) + 's' : '<n/a>'}`, inline: false },
-                            { name: 'Gambling Stats', value: `Card W/L: ${gStats.cardWins||0}/${gStats.cardLosses||0}\nBlackjack W/L: ${gStats.bjWins||0}/${gStats.bjLosses||0}\nRPS W/L: ${gStats.rpsWins||0}/${gStats.rpsLosses||0}\nTotal Bets: ${gStats.totalBets||0}\nTotal Payouts: ${gStats.totalPayouts||0}`, inline: false }
-                        ).setTimestamp();
+                            const embed = new EmbedBuilder()
+                                .setTitle('House Daily Update')
+                                .setColor(color)
+                                .addFields(
+                                    { name: 'Star Pool (shared)', value: String(shared), inline: true },
+                                    { name: 'Earnable Today (per player)', value: String(perPlayer), inline: true },
+                                    { name: 'RPSH Cards', value: `R:${rocks} P:${papers} S:${scissors} H:${elder}`, inline: true },
+                                    { name: 'MiniGame (guild)', value: `Successes: ${mmSuccesses}  Failures: ${mmFailures}\nAvg Response: ${mmSuccesses ? (mmAvgMs/1000).toFixed(2) + 's' : '<n/a>'}`, inline: false },
+                                    { name: 'Gambling Stats', value: `Card W/L: ${gStats.cardWins||0}/${gStats.cardLosses||0}\nBlackjack W/L: ${gStats.bjWins||0}/${gStats.bjLosses||0}\nRPS W/L: ${gStats.rpsWins||0}/${gStats.rpsLosses||0}\nTotal Bets: ${gStats.totalBets||0}\nTotal Payouts: ${gStats.totalPayouts||0}`, inline: false }
+                                ).setTimestamp();
                     if (thumbnail) embed.setThumbnail(thumbnail);
 
                     await channel.send({ embeds: [embed] }).catch(() => null);
@@ -171,7 +190,7 @@ async function startDailyNotifier(client) {
 }
 
 // Start a daily cron job to run maintenance. Default: daily at 09:00 (America/New_York)
-function startWeeklyManager({ cronExpression = '0 9 */2 * *', runOnStart = true, timezone = 'America/New_York' } = {}) {
+function startWeeklyManager({ cronExpression = '0 9 * * *', runOnStart = true, timezone = 'America/New_York' } = {}) {
     try {
         if (runOnStart) {
             performWeeklyMaintenance().catch(e => console.error('initial weekly maintenance error', e));

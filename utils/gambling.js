@@ -136,6 +136,8 @@ async function startGamble(interaction, game, betType, betAmount) {
     const thumbnail = discordConfig && discordConfig.embed && discordConfig.embed.thumbnail_url ? discordConfig.embed.thumbnail_url : null;
 
     const player = await campers.findOne({ discordId: interaction.user.id });
+    const DEFAULT_PLAYER_POOL = 30;
+    const playerPool = (player && typeof player.gamblePool === 'number') ? player.gamblePool : DEFAULT_PLAYER_POOL;
     if (!player) {
         const errEmbed = new EmbedBuilder().setTitle('Player Not Found').setDescription('Player profile not found. Use /join first.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
         if (thumbnail) errEmbed.setThumbnail(thumbnail);
@@ -158,11 +160,11 @@ async function startGamble(interaction, game, betType, betAmount) {
         return;
     }
 
-    // If the bet is in stars and the house has no stars to pay out, block the gamble early
-    if (betType === 'stars' && gambleState && typeof gambleState.starsPool === 'number' && gambleState.starsPool <= 0) {
-        const noHouse = new EmbedBuilder().setTitle('House Broke').setDescription('The house has no stars to pay out right now; gambling with stars is temporarily disabled.').setColor(0xFF0000);
-        if (thumbnail) noHouse.setThumbnail(thumbnail);
-        await interaction.editReply({ embeds: [noHouse], ephemeral: true });
+    // If the bet is in stars and the player's gamble pool is empty, block the gamble early
+    if (betType === 'stars' && (!playerPool || playerPool <= 0)) {
+        const noPool = new EmbedBuilder().setTitle('No Gamble Pool').setDescription('You have no gamble pool remaining to pay out wins right now; gambling with stars is temporarily disabled for you until the next reset.').setColor(0xFF0000);
+        if (thumbnail) noPool.setThumbnail(thumbnail);
+        await interaction.editReply({ embeds: [noPool], ephemeral: true });
         return;
     }
 
@@ -184,8 +186,8 @@ async function startGamble(interaction, game, betType, betAmount) {
         if (thumbnail) embed1.setThumbnail(thumbnail);
         // warn if potential payout exceeds house pool
         const potential = isGold ? Math.floor(betAmount * 30) : Math.floor(betAmount * 2.9);
-        if (gambleState && typeof gambleState.starsPool === 'number' && potential > gambleState.starsPool) {
-            embed1.setDescription(embed1.data.description + `\n\nNote: The house has only ${gambleState.starsPool} stars; maximum payout for this game is ${gambleState.starsPool} stars. If multiple players finish at once, the first to complete receives the payout.`);
+        if (potential > playerPool) {
+            embed1.setDescription(embed1.data.description + `\n\nNote: Your gamble pool has only ${playerPool} stars; maximum payout you can receive is ${playerPool} stars.`);
         }
 
         const assetsDir = path.join(__dirname, '..', 'assets', 'cards');
@@ -260,8 +262,8 @@ async function startGamble(interaction, game, betType, betAmount) {
         // Warn if potential payout exceeds house pool
         const potentialBJ = Math.round(betAmount * 1.9);
         let desc = renderBlackjack(session.state);
-        if (gambleState && typeof gambleState.starsPool === 'number' && potentialBJ > gambleState.starsPool) {
-            desc += `\n\nNote: The house has only ${gambleState.starsPool} stars; maximum payout is ${gambleState.starsPool} stars. If multiple players finish at once, the first to complete receives the payout.`;
+        if (potentialBJ > playerPool) {
+            desc += `\n\nNote: Your gamble pool has only ${playerPool} stars; maximum payout is ${playerPool} stars.`;
         }
         const embed = new EmbedBuilder().setTitle('Blackjack').setDescription(desc).setColor(embedColor);
         if (thumbnail) embed.setThumbnail(thumbnail);
@@ -280,8 +282,8 @@ async function startGamble(interaction, game, betType, betAmount) {
         session.state = { botCounts: gambleState, playerChoice: null };
         const potentialRPS = Math.floor(betAmount * 2);
         let rpsDesc = `Bigfoot flips through his deck. It has **${totalLeft}** cards left in it.`;
-        if (gambleState && typeof gambleState.starsPool === 'number' && potentialRPS > gambleState.starsPool) {
-            rpsDesc += `\n\nNote: The house has only ${gambleState.starsPool} stars; maximum payout is ${gambleState.starsPool} stars.`;
+        if (potentialRPS > playerPool) {
+            rpsDesc += `\n\nNote: Your gamble pool has only ${playerPool} stars; maximum payout is ${playerPool} stars.`;
         }
         const embed = new EmbedBuilder().setTitle('Rock Paper Scissors').setDescription(rpsDesc).setColor(embedColor);
         if (thumbnail) embed.setThumbnail(thumbnail);
@@ -378,13 +380,15 @@ async function handleButtonInteraction(customId, interaction) {
             let payout = 0;
             if (won) {
                 const desired = isGold ? Math.floor(session.bet * 30) : Math.floor(session.bet * 2.9);
-                const stateDoc = await gamblingCol.findOne({ _id: 'global' });
-                const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
-                const actualPaid = Math.min(desired, Math.max(0, pool));
+                // use player's gamblePool as source for payouts
+                const playerDocLatest = await campers.findOne({ _id: player._id });
+                const pPool = (playerDocLatest && typeof playerDocLatest.gamblePool === 'number') ? playerDocLatest.gamblePool : 30;
+                const actualPaid = Math.min(desired, Math.max(0, pPool));
                 if (actualPaid > 0) {
                     payout = actualPaid;
-                    await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: payout }, 'card_payout');
-                    await applyGambleInc(db, { starsPool: -actualPaid, 'stats.cardWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'card_win');
+                    // credit player's inventory and deduct from their gamblePool
+                    await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: payout, gamblePool: -actualPaid }, 'card_payout');
+                    await applyGambleInc(db, { 'stats.cardWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'card_win');
                 } else {
                     payout = 0;
                     // record that bet was played
@@ -526,12 +530,13 @@ async function handleButtonInteraction(customId, interaction) {
 
                 if (result === 'win') {
                     const desired = Math.round(session.bet * 1.9);
-                    const stateDoc = await gambleCol.findOne({ _id: 'global' });
-                    const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
-                    const actualPaid = Math.min(desired, Math.max(0, pool));
+                    // pay from player's gamblePool
+                    const playerDocLatest = await campers.findOne({ _id: player._id });
+                    const pPool = (playerDocLatest && typeof playerDocLatest.gamblePool === 'number') ? playerDocLatest.gamblePool : 30;
+                    const actualPaid = Math.min(desired, Math.max(0, pPool));
                     if (actualPaid > 0) {
-                        await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: actualPaid }, 'bj_payout');
-                        await applyGambleInc(db, { starsPool: -actualPaid, 'stats.bjWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet, 'bjLossStreak': 1 }, 'bj_win');
+                        await applyPlayerInc(campers, { _id: player._id }, { ['inventory.' + session.betType]: actualPaid, gamblePool: -actualPaid }, 'bj_payout');
+                        await applyGambleInc(db, { 'stats.bjWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet, 'bjLossStreak': 1 }, 'bj_win');
                     } else {
                         await applyGambleInc(db, { 'stats.bjWins': 1, 'stats.totalPayouts': 0, 'stats.totalBets': session.bet, 'bjLossStreak': 1 }, 'bj_win_no_pool');
                     }
@@ -647,12 +652,13 @@ async function handleButtonInteraction(customId, interaction) {
 
             if (result === 'win') {
                 const desired = potentialPayout;
-                const stateDoc = await gambleCol.findOne({ _id: 'global' });
-                const pool = (stateDoc && typeof stateDoc.starsPool === 'number') ? stateDoc.starsPool : 0;
-                actualPaid = Math.min(desired, Math.max(0, pool));
+                // pay from player's gamblePool
+                const playerDocLatest = await campers.findOne({ discordId: session.userId });
+                const pPool = (playerDocLatest && typeof playerDocLatest.gamblePool === 'number') ? playerDocLatest.gamblePool : 30;
+                actualPaid = Math.min(desired, Math.max(0, pPool));
                 if (actualPaid > 0) {
-                    await applyPlayerInc(campers, { discordId: session.userId }, { ['inventory.' + session.betType]: actualPaid }, 'rps_payout');
-                    await applyGambleInc(db, { starsPool: -actualPaid, 'stats.rpsWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'rps_win');
+                    await applyPlayerInc(campers, { discordId: session.userId }, { ['inventory.' + session.betType]: actualPaid, gamblePool: -actualPaid }, 'rps_payout');
+                    await applyGambleInc(db, { 'stats.rpsWins': 1, 'stats.totalPayouts': actualPaid, 'stats.totalBets': session.bet }, 'rps_win');
                 } else {
                     await applyGambleInc(db, { 'stats.rpsWins': 1, 'stats.totalPayouts': 0, 'stats.totalBets': session.bet }, 'rps_win_no_pool');
                 }
