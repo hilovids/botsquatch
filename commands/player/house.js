@@ -35,6 +35,11 @@ module.exports = {
             const rpsHouseWins = (res.stats.rpsLosses || 0);
             const rpsHouseLosses = (res.stats.rpsWins || 0);
 
+            // show only the issuer's gamblePool so they know how much they could still win today
+            const campersCol = db.collection('campers');
+            const issuer = await campersCol.findOne({ discordId: interaction.user.id });
+            const issuerPool = issuer && typeof issuer.gamblePool === 'number' ? issuer.gamblePool : 30;
+
             const embed = new EmbedBuilder().setTitle("House Resources").setColor(embedColor).setThumbnail(thumbnail || '')
                 .addFields(
                     { name: 'Payouts', value: `Card: ${res.payouts.card.multiplier}x\nBlackjack: ${res.payouts.blackjack.multiplier}x\nRPS: ${res.payouts.rps.multiplier}x`, inline: true },
@@ -43,6 +48,10 @@ module.exports = {
                 )
                 .addFields(
                     { name: 'House Stats (W/L)', value: `Card: ${cardHouseWins}/${cardHouseLosses}\nBlackjack: ${bjHouseWins}/${bjHouseLosses}\nRPS: ${rpsHouseWins}/${rpsHouseLosses}\nTotal Payouts: ${res.stats.totalPayouts || 0}`, inline: false }
+                )
+                // include only the command issuer's gamble pool
+                .addFields(
+                    { name: 'Your Gamble Pool (earnable stars)', value: String(issuerPool), inline: false }
                 )
                 .setFooter({ text: `Last Cashout: ${res.lastPayoutAt ? new Date(res.lastPayoutAt).toUTCString() : 'never'}` });
 
