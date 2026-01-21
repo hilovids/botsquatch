@@ -185,7 +185,11 @@ async function startDailyNotifier(client) {
     // schedule daily at 09:00 America/New_York
     postOnce();
     try {
-        cron.schedule('0 9 * * *', postOnce, { timezone: 'America/New_York' });
+        const dailyExpr = '0 9 * * *';
+        const options = { scheduled: true, timezone: 'America/New_York' };
+        const task = cron.schedule(dailyExpr, postOnce, options);
+        console.log('startDailyNotifier: scheduled daily cron', { expression: dailyExpr, timezone: options.timezone });
+        return task;
     } catch (e) { console.error('startDailyNotifier cron schedule error', e); }
 }
 
@@ -195,9 +199,11 @@ function startWeeklyManager({ cronExpression = '0 9 * * *', runOnStart = true, t
         if (runOnStart) {
             performWeeklyMaintenance().catch(e => console.error('initial weekly maintenance error', e));
         }
+        const options = timezone ? { scheduled: true, timezone } : { scheduled: true };
         const task = cron.schedule(cronExpression, async () => {
             try { await performWeeklyMaintenance(); } catch (e) { console.error('weekly maintenance cron error', e); }
-        }, timezone ? { timezone } : {});
+        }, options);
+        console.log('startWeeklyManager: scheduled cron', { expression: cronExpression, timezone: options.timezone || 'none' });
         return task;
     } catch (e) { console.error('startWeeklyManager error', e); return null; }
 }

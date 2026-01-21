@@ -52,9 +52,8 @@ module.exports = {
                 // include only the command issuer's gamble pool
                 .addFields(
                     { name: 'Your Gamble Pool (earnable stars)', value: String(issuerPool), inline: false }
-                )
-                .setFooter({ text: `Last Cashout: ${res.lastPayoutAt ? new Date(res.lastPayoutAt).toUTCString() : 'never'}` });
-
+                );
+                
             await interaction.editReply({ embeds: [embed] });
         } catch (e) {
             console.error('house command error', e);
