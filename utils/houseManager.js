@@ -183,7 +183,7 @@ async function startDailyNotifier(client) {
     }
 
     // schedule daily at 09:00 America/New_York
-    postOnce();
+    // postOnce();
     try {
         const dailyExpr = '0 9 * * *';
         const options = { scheduled: true, timezone: 'America/New_York' };
