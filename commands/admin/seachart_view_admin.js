@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const Jimp = require('jimp');
 const path = require('path');
 const { connectToMongo } = require('../../utils/mongodbUtil');
-const { getBoard } = require('../../utility/seachart');
+const { getBoard } = require('../../utils/seachart');
 
 module.exports = {
   data: new SlashCommandBuilder()
