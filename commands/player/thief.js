@@ -2,9 +2,8 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
 const fs = require('fs');
 const path = require('path');
-
-// Track active thief commands per user ID to prevent spamming
-const activeThieves = new Set();
+// track users who currently have a pending /thief in progress
+const pendingThief = new Set();
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,10 +14,6 @@ module.exports = {
 
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
-        // prevent concurrent thief attempts per player
-        if (activeThieves.has(interaction.user.id)) {
-            return await interaction.editReply({ content: 'You already have an active /thief attempt. Please wait until it completes.', ephemeral: true });
-        }
         try {
             const db = await connectToMongo();
             const campers = db.collection('campers');
@@ -67,8 +62,12 @@ module.exports = {
             }
 
             const targetStars = (target.inventory && typeof target.inventory.stars === 'number') ? target.inventory.stars : 0;
-            if (amount > targetStars) {
-                const e = new EmbedBuilder().setTitle('Not Enough Stars').setDescription(`Target only has ${targetStars} stars.`).setColor(0xFF0000);
+            // Do not reject attempts where requested amount > current stars.
+            // We'll cap the stolen amount at transfer time to avoid overdrawing.
+
+            // Prevent the thief from starting another /thief while one is pending
+            if (pendingThief.has(String(interaction.user.id))) {
+                const e = new EmbedBuilder().setTitle('Already Pending').setDescription('You already have a pending /thief attempt. Wait until it resolves.').setColor(0xFF0000);
                 if (thumbnail) e.setThumbnail(thumbnail);
                 return await interaction.editReply({ embeds: [e], ephemeral: true });
             }
@@ -78,9 +77,6 @@ module.exports = {
             const robberyImg = fs.existsSync(path.join(assetsDir, 'robbery.jpg')) ? path.join(assetsDir, 'robbery.jpg') : null;
             const arrestedImg = fs.existsSync(path.join(assetsDir, 'arrested.png')) ? path.join(assetsDir, 'arrested.png') : null;
             const gotawayImg = fs.existsSync(path.join(assetsDir, 'gotaway.jpg')) ? path.join(assetsDir, 'gotaway.jpg') : null;
-
-            // mark this user as having an active thief attempt
-            activeThieves.add(interaction.user.id);
 
             // Send quicktime embed into target's confessional or DM
             const qtEmbed = new EmbedBuilder()
@@ -113,8 +109,6 @@ module.exports = {
             }
 
             if (!sentMsg) {
-                // clear lock before returning
-                activeThieves.delete(interaction.user.id);
                 const e = new EmbedBuilder().setTitle('Delivery Failed').setDescription('Could not deliver quicktime to target.').setColor(0xFF0000);
                 if (thumbnail) e.setThumbnail(thumbnail);
                 return await interaction.editReply({ embeds: [e], ephemeral: true });
@@ -123,6 +117,8 @@ module.exports = {
             // Notify thief that attempt was sent
             const pending = new EmbedBuilder().setTitle('Attempt Started').setDescription(`Quicktime sent to ${targetUser.username}. Waiting ${10 * amount} seconds for BLOCK.`).setColor(embedColor);
             if (thumbnail) pending.setThumbnail(thumbnail);
+            // mark this user as having a pending thief attempt
+            pendingThief.add(String(interaction.user.id));
             await interaction.editReply({ embeds: [pending], ephemeral: true });
 
             // create collector on destChannel for BLOCK message from targetUser
@@ -142,50 +138,37 @@ module.exports = {
                 if (thumbnail) doneEmbed.setThumbnail(thumbnail);
                 if (arrestedImg) doneEmbed.setImage('attachment://arrested' + path.extname(arrestedImg));
                 try { await sentMsg.edit({ embeds: [doneEmbed], files: arrestedImg ? [{ attachment: arrestedImg, name: 'arrested' + path.extname(arrestedImg) }] : [], components: [] }); } catch (e) {}
+                // release pending lock
+                pendingThief.delete(String(interaction.user.id));
                 collector.stop('blocked');
             });
 
             collector.on('end', async (_, reason) => {
+                // ensure pending lock removed for all outcomes
                 try {
-                    if (blocked) return; // already handled
+                    if (blocked) return; // already handled in collect
 
-                    // thief got away: perform star transfer but clamp to available stars
+                    // thief got away: perform star transfer
                     try {
-                        // Use an aggregation-pipeline update to atomically clamp the victim's stars to >= 0
-                        // and compute how many stars were available before the decrement.
-                        let toSteal = 0;
-                        const updateRes = await campers.findOneAndUpdate(
-                            { discordId: targetUser.id },
-                            [
-                                { $set: { 'inventory.stars': { $max: [ { $subtract: ['$inventory.stars', amount] }, 0 ] } } }
-                            ],
-                            { returnDocument: 'before' }
-                        ).catch(() => null);
+                        // re-fetch target to get current available stars
+                        const freshTarget = await campers.findOne({ discordId: targetUser.id });
+                        const available = (freshTarget && freshTarget.inventory && typeof freshTarget.inventory.stars === 'number') ? freshTarget.inventory.stars : 0;
+                        const stealAmount = Math.min(amount, Math.max(0, available));
 
-                        const beforeStars = (updateRes && updateRes.value && updateRes.value.inventory && typeof updateRes.value.inventory.stars === 'number') ? updateRes.value.inventory.stars : 0;
-                        toSteal = Math.min(amount, beforeStars);
-
-                        // credit thief and set cooldown
-                        if (toSteal > 0) {
-                            await campers.updateOne({ discordId: interaction.user.id }, { $inc: { 'inventory.stars': toSteal }, $set: { lastThiefAt: new Date() } });
-                        } else {
-                            await campers.updateOne({ discordId: interaction.user.id }, { $set: { lastThiefAt: new Date() } });
+                        // decrement target (only if >0), increment thief, set lastThiefAt
+                        if (stealAmount > 0) {
+                            await campers.updateOne({ discordId: targetUser.id }, { $inc: { 'inventory.stars': -stealAmount } });
                         }
-
-                        // defensive: ensure no negative stars on target
-                        const postTarget = await campers.findOne({ discordId: targetUser.id });
-                        if (postTarget && postTarget.inventory && typeof postTarget.inventory.stars === 'number' && postTarget.inventory.stars < 0) {
-                            await campers.updateOne({ discordId: targetUser.id }, { $set: { 'inventory.stars': 0 } });
-                        }
+                        await campers.updateOne({ discordId: interaction.user.id }, { $inc: { 'inventory.stars': stealAmount }, $set: { lastThiefAt: new Date() } });
 
                         // fetch updated thief record for display
                         const updatedThief = await campers.findOne({ discordId: interaction.user.id });
                         const newTotal = (updatedThief.inventory && typeof updatedThief.inventory.stars === 'number') ? updatedThief.inventory.stars : 0;
 
-                        // edit victim embed to indicate thief got away (use actual stolen amount)
+                        // edit victim embed to indicate thief got away
                         const failEmbed = new EmbedBuilder()
                             .setTitle('The Thief Got Away')
-                            .setDescription(`You didn't type BLOCK in time. The thief escaped with ${toSteal} star${toSteal===1?'':'s'}.`)
+                            .setDescription(`You didn't type BLOCK in time. The thief escaped with ${stealAmount} star${stealAmount===1?'':'s'}.`)
                             .setColor(0xFF9900)
                             .setTimestamp();
                         if (thumbnail) failEmbed.setThumbnail(thumbnail);
@@ -195,10 +178,10 @@ module.exports = {
                         // send result embed to thief in their confessional or DM
                         const resultEmbed = new EmbedBuilder()
                             .setTitle('Robbery Successful')
-                            .setDescription(`You successfully stole ${toSteal} star${toSteal===1?'':'s'} from ${targetUser.username}.`)
+                            .setDescription(`You successfully stole ${stealAmount} star${stealAmount===1?'':'s'} from ${targetUser.username}.`)
                             .setColor(embedColor)
                             .addFields(
-                                { name: 'Stars Stolen', value: `+${toSteal}`, inline: true },
+                                { name: 'Stars Stolen', value: `+${stealAmount}`, inline: true },
                                 { name: 'Your Stars', value: `${newTotal}`, inline: true }
                             )
                             .setTimestamp();
@@ -216,19 +199,19 @@ module.exports = {
                             const u = await interaction.client.users.fetch(interaction.user.id).catch(() => null);
                             if (u) await u.send({ embeds: [resultEmbed] }).catch(() => null);
                         }
+
                     } catch (err) {
                         console.error('thief transfer error', err);
                     }
                 } finally {
-                    // release per-player lock no matter what
-                    activeThieves.delete(interaction.user.id);
+                    pendingThief.delete(String(interaction.user.id));
                 }
             });
-            
+
         } catch (err) {
             console.error('thief command error', err);
-            // ensure lock cleared on unexpected errors
-            try { activeThieves.delete(interaction.user.id); } catch (e) {}
+            // ensure pending lock cleared if something failed after it was set
+            try { pendingThief.delete(String(interaction.user.id)); } catch (e) {}
             try { await interaction.editReply({ content: 'There was an error running /thief.', ephemeral: true }); } catch (e) {}
         }
     }
