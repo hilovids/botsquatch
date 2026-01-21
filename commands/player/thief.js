@@ -3,6 +3,9 @@ const { connectToMongo } = require('../../utils/mongodbUtil');
 const fs = require('fs');
 const path = require('path');
 
+// Track active thief commands per user ID to prevent spamming
+const activeThieves = new Set();
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('thief')
@@ -12,6 +15,10 @@ module.exports = {
 
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
+        // prevent concurrent thief attempts per player
+        if (activeThieves.has(interaction.user.id)) {
+            return await interaction.editReply({ content: 'You already have an active /thief attempt. Please wait until it completes.', ephemeral: true });
+        }
         try {
             const db = await connectToMongo();
             const campers = db.collection('campers');
@@ -72,6 +79,9 @@ module.exports = {
             const arrestedImg = fs.existsSync(path.join(assetsDir, 'arrested.png')) ? path.join(assetsDir, 'arrested.png') : null;
             const gotawayImg = fs.existsSync(path.join(assetsDir, 'gotaway.jpg')) ? path.join(assetsDir, 'gotaway.jpg') : null;
 
+            // mark this user as having an active thief attempt
+            activeThieves.add(interaction.user.id);
+
             // Send quicktime embed into target's confessional or DM
             const qtEmbed = new EmbedBuilder()
                 .setTitle('Quick! A Thief!')
@@ -103,6 +113,8 @@ module.exports = {
             }
 
             if (!sentMsg) {
+                // clear lock before returning
+                activeThieves.delete(interaction.user.id);
                 const e = new EmbedBuilder().setTitle('Delivery Failed').setDescription('Could not deliver quicktime to target.').setColor(0xFF0000);
                 if (thumbnail) e.setThumbnail(thumbnail);
                 return await interaction.editReply({ embeds: [e], ephemeral: true });
@@ -134,10 +146,11 @@ module.exports = {
             });
 
             collector.on('end', async (_, reason) => {
-                if (blocked) return; // already handled
-
-                // thief got away: perform star transfer but clamp to available stars
                 try {
+                    if (blocked) return; // already handled
+
+                    // thief got away: perform star transfer but clamp to available stars
+                    try {
                     // refresh target to get current available stars
                     let freshTarget = await campers.findOne({ discordId: targetUser.id });
                     let available = (freshTarget && freshTarget.inventory && typeof freshTarget.inventory.stars === 'number') ? freshTarget.inventory.stars : 0;
@@ -216,13 +229,19 @@ module.exports = {
                         if (u) await u.send({ embeds: [resultEmbed] }).catch(() => null);
                     }
 
-                } catch (err) {
-                    console.error('thief transfer error', err);
+                    } catch (err) {
+                        console.error('thief transfer error', err);
+                    }
+                } finally {
+                    // release per-player lock no matter what
+                    activeThieves.delete(interaction.user.id);
                 }
             });
-
+            
         } catch (err) {
             console.error('thief command error', err);
+            // ensure lock cleared on unexpected errors
+            try { activeThieves.delete(interaction.user.id); } catch (e) {}
             try { await interaction.editReply({ content: 'There was an error running /thief.', ephemeral: true }); } catch (e) {}
         }
     }
