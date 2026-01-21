@@ -65,6 +65,13 @@ module.exports = {
             // Do not reject attempts where requested amount > current stars.
             // We'll cap the stolen amount at transfer time to avoid overdrawing.
 
+            // Validate requested amount against target's current stars at issue time
+            if (amount > targetStars) {
+                const e = new EmbedBuilder().setTitle('Not Enough Stars').setDescription(`Target only has ${targetStars} stars.`).setColor(0xFF0000);
+                if (thumbnail) e.setThumbnail(thumbnail);
+                return await interaction.editReply({ embeds: [e], ephemeral: true });
+            }
+
             // Prevent the thief from starting another /thief while one is pending
             if (pendingThief.has(String(interaction.user.id))) {
                 const e = new EmbedBuilder().setTitle('Already Pending').setDescription('You already have a pending /thief attempt. Wait until it resolves.').setColor(0xFF0000);
