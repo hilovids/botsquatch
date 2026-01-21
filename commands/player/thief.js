@@ -151,84 +151,71 @@ module.exports = {
 
                     // thief got away: perform star transfer but clamp to available stars
                     try {
-                    // refresh target to get current available stars
-                    let freshTarget = await campers.findOne({ discordId: targetUser.id });
-                    let available = (freshTarget && freshTarget.inventory && typeof freshTarget.inventory.stars === 'number') ? freshTarget.inventory.stars : 0;
-                    let toSteal = Math.min(amount, available);
+                        // Use an aggregation-pipeline update to atomically clamp the victim's stars to >= 0
+                        // and compute how many stars were available before the decrement.
+                        let toSteal = 0;
+                        const updateRes = await campers.findOneAndUpdate(
+                            { discordId: targetUser.id },
+                            [
+                                { $set: { 'inventory.stars': { $max: [ { $subtract: ['$inventory.stars', amount] }, 0 ] } } }
+                            ],
+                            { returnDocument: 'before' }
+                        ).catch(() => null);
 
-                    // attempt to decrement atomically when possible
-                    if (toSteal > 0) {
-                        // try a guarded decrement that only succeeds if enough stars still exist
-                        const guard = await campers.findOneAndUpdate(
-                            { discordId: targetUser.id, 'inventory.stars': { $gte: toSteal } },
-                            { $inc: { 'inventory.stars': -toSteal } },
-                            { returnDocument: 'after' }
-                        );
+                        const beforeStars = (updateRes && updateRes.value && updateRes.value.inventory && typeof updateRes.value.inventory.stars === 'number') ? updateRes.value.inventory.stars : 0;
+                        toSteal = Math.min(amount, beforeStars);
 
-                        if (!guard.value) {
-                            // not enough by the time of update, refresh and recompute
-                            freshTarget = await campers.findOne({ discordId: targetUser.id });
-                            available = (freshTarget && freshTarget.inventory && typeof freshTarget.inventory.stars === 'number') ? freshTarget.inventory.stars : 0;
-                            toSteal = Math.min(amount, available);
-                            if (toSteal > 0) {
-                                // decrement whatever is available now
-                                await campers.updateOne({ discordId: targetUser.id }, { $inc: { 'inventory.stars': -toSteal } });
-                            }
+                        // credit thief and set cooldown
+                        if (toSteal > 0) {
+                            await campers.updateOne({ discordId: interaction.user.id }, { $inc: { 'inventory.stars': toSteal }, $set: { lastThiefAt: new Date() } });
+                        } else {
+                            await campers.updateOne({ discordId: interaction.user.id }, { $set: { lastThiefAt: new Date() } });
                         }
-                    }
 
-                    // always set thief cooldown; only credit stars if toSteal > 0
-                    if (toSteal > 0) {
-                        await campers.updateOne({ discordId: interaction.user.id }, { $inc: { 'inventory.stars': toSteal }, $set: { lastThiefAt: new Date() } });
-                    } else {
-                        await campers.updateOne({ discordId: interaction.user.id }, { $set: { lastThiefAt: new Date() } });
-                    }
+                        // defensive: ensure no negative stars on target
+                        const postTarget = await campers.findOne({ discordId: targetUser.id });
+                        if (postTarget && postTarget.inventory && typeof postTarget.inventory.stars === 'number' && postTarget.inventory.stars < 0) {
+                            await campers.updateOne({ discordId: targetUser.id }, { $set: { 'inventory.stars': 0 } });
+                        }
 
-                    // ensure target doesn't have negative stars (defensive)
-                    const postTarget = await campers.findOne({ discordId: targetUser.id });
-                    if (postTarget && postTarget.inventory && typeof postTarget.inventory.stars === 'number' && postTarget.inventory.stars < 0) {
-                        await campers.updateOne({ discordId: targetUser.id }, { $set: { 'inventory.stars': 0 } });
-                    }
+                        // fetch updated thief record for display
+                        const updatedThief = await campers.findOne({ discordId: interaction.user.id });
+                        const newTotal = (updatedThief.inventory && typeof updatedThief.inventory.stars === 'number') ? updatedThief.inventory.stars : 0;
 
-                    // fetch updated thief record for display
-                    const updatedThief = await campers.findOne({ discordId: interaction.user.id });
-                    const newTotal = (updatedThief.inventory && typeof updatedThief.inventory.stars === 'number') ? updatedThief.inventory.stars : 0;
+                        // edit victim embed to indicate thief got away (use actual stolen amount)
+                        const failEmbed = new EmbedBuilder()
+                            .setTitle('The Thief Got Away')
+                            .setDescription(`You didn't type BLOCK in time. The thief escaped with ${toSteal} star${toSteal===1?'':'s'}.`)
+                            .setColor(0xFF9900)
+                            .setTimestamp();
+                        if (thumbnail) failEmbed.setThumbnail(thumbnail);
+                        if (gotawayImg) failEmbed.setImage('attachment://gotaway' + path.extname(gotawayImg));
+                        try { await sentMsg.edit({ embeds: [failEmbed], files: gotawayImg ? [{ attachment: gotawayImg, name: 'gotaway' + path.extname(gotawayImg) }] : [], components: [] }); } catch (e) {}
 
-                    // edit victim embed to indicate thief got away (use actual stolen amount)
-                    const failEmbed = new EmbedBuilder()
-                        .setTitle('The Thief Got Away')
-                        .setDescription(`You didn't type BLOCK in time. The thief escaped with ${toSteal} star${toSteal===1?'':'s'}.`)
-                        .setColor(0xFF9900)
-                        .setTimestamp();
-                    if (thumbnail) failEmbed.setThumbnail(thumbnail);
-                    if (gotawayImg) failEmbed.setImage('attachment://gotaway' + path.extname(gotawayImg));
-                    try { await sentMsg.edit({ embeds: [failEmbed], files: gotawayImg ? [{ attachment: gotawayImg, name: 'gotaway' + path.extname(gotawayImg) }] : [], components: [] }); } catch (e) {}
+                        // send result embed to thief in their confessional or DM
+                        const resultEmbed = new EmbedBuilder()
+                            .setTitle('Robbery Successful')
+                            .setDescription(`You successfully stole ${toSteal} star${toSteal===1?'':'s'} from ${targetUser.username}.`)
+                            .setColor(embedColor)
+                            .addFields(
+                                { name: 'Stars Stolen', value: `+${toSteal}`, inline: true },
+                                { name: 'Your Stars', value: `${newTotal}`, inline: true }
+                            )
+                            .setTimestamp();
+                        if (thumbnail) resultEmbed.setThumbnail(thumbnail);
 
-                    // send result embed to thief in their confessional or DM
-                    const resultEmbed = new EmbedBuilder()
-                        .setTitle('Robbery Successful')
-                        .setDescription(`You successfully stole ${toSteal} star${toSteal===1?'':'s'} from ${targetUser.username}.`)
-                        .setColor(embedColor)
-                        .addFields(
-                            { name: 'Stars Stolen', value: `+${toSteal}`, inline: true },
-                            { name: 'Your Stars', value: `${newTotal}`, inline: true }
-                        )
-                        .setTimestamp();
-                    if (thumbnail) resultEmbed.setThumbnail(thumbnail);
-
-                    // send to thief confessional or DM
-                    if (thief.confessionalId) {
-                        const ch = await interaction.client.channels.fetch(thief.confessionalId).catch(() => null);
-                        if (ch) await ch.send({ embeds: [resultEmbed] }).catch(() => null);
-                        else {
+                        // send to thief confessional or DM
+                        if (thief.confessionalId) {
+                            const ch = await interaction.client.channels.fetch(thief.confessionalId).catch(() => null);
+                            if (ch) await ch.send({ embeds: [resultEmbed] }).catch(() => null);
+                            else {
+                                const u = await interaction.client.users.fetch(interaction.user.id).catch(() => null);
+                                if (u) await u.send({ embeds: [resultEmbed] }).catch(() => null);
+                            }
+                        } else {
                             const u = await interaction.client.users.fetch(interaction.user.id).catch(() => null);
                             if (u) await u.send({ embeds: [resultEmbed] }).catch(() => null);
                         }
-                    } else {
-                        const u = await interaction.client.users.fetch(interaction.user.id).catch(() => null);
-                        if (u) await u.send({ embeds: [resultEmbed] }).catch(() => null);
-                    }
-
                     } catch (err) {
                         console.error('thief transfer error', err);
                     }
