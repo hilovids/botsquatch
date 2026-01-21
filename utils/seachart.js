@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Jimp = require('jimp');
-const { connectToMongo } = require('../utils/mongodbUtil');
+const { connectToMongo } = require('./mongodbUtil');
 
 const BOARD_PATH = path.join(__dirname, '..', 'data', 'seachart_board.json');
 const ASSETS_DIR = path.join(__dirname, '..', 'assets');

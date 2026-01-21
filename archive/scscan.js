@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { EmbedBuilder } = require('discord.js');
 const mysql = require('mysql');
 const { mySql_host, mySql_password, mySql_port, mySql_user, mySql_database} = require('../../config.json');
-const { hasSundayPassedSince, isValidGridSpace, distanceBetweenSpaces, scanResult } = require("../../utility/seachartUtility.js");
+const { hasSundayPassedSince, isValidGridSpace, distanceBetweenSpaces, scanResult } = require("../../utils/seachart.js");
 
 function getUser(connection, discordUser){
     return new Promise((resolve, reject)=>{
