@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { EmbedBuilder } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
-const { ensurePlaced, renderBoardImage } = require('../../utility/seachart');
+const { ensurePlaced, renderBoardImage } = require('../../utils/seachart');
 
 module.exports = {
     data: new SlashCommandBuilder()

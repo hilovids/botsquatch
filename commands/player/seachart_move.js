@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { EmbedBuilder } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
-const { getBoard, ensurePlaced, isNewLocalDay, canReach } = require('../../utility/seachart');
+const { getBoard, ensurePlaced, isNewLocalDay, canReach } = require('../../utils/seachart');
 
 async function isValidGridSpace15(str){
   if(!str) return false;
