@@ -211,49 +211,7 @@ async function renderBoardImage(viewer) {
         }
     }
 
-    // Draw a small legend/key explaining symbols (bottom-right, consistent spacing)
-    (function drawLegend(){
-        const items = [
-            { type: 'star', label: 'You / Board star', icon: starIcon },
-            { type: 'dredge_found', label: 'Dredged — Found', icon: dredgeFoundIcon },
-            { type: 'dredge_none', label: 'Dredged — Nothing', icon: dredgeNothingIcon },
-            { type: 'number', label: 'Number: scanned value' },
-            { type: 'blocked', label: 'Blocked cell' }
-        ];
-
-        const padX = 12;
-        const padY = 12;
-        const iconSize = Math.max(16, Math.floor(cellSize * 0.55));
-        const itemHeight = Math.max(iconSize, Math.floor(cellSize * 0.6)) + 8; // icon/text height + gap
-        const legendWidth = 240;
-        const legendHeight = padY * 2 + items.length * itemHeight;
-
-        // place legend above bottom title area
-        const bottomMargin = 100;
-        const legendX = width - legendWidth - 20;
-        const legendY = Math.max(topMargin, height - legendHeight - bottomMargin);
-
-        const legendBg = new Jimp(legendWidth, legendHeight, 0x000000FF);
-        image.composite(legendBg, legendX, legendY);
-
-        let curY = legendY + padY;
-        for (const it of items) {
-            if (it.icon) {
-                const icon = it.icon;
-                image.composite(icon, legendX + padX, curY + Math.floor((itemHeight - icon.bitmap.height) / 2));
-                image.print(font, legendX + padX + icon.bitmap.width + 8, curY + Math.floor((itemHeight - 16) / 2), it.label);
-            } else if (it.type === 'number') {
-                // draw a sample number aligned like board numbers
-                image.print(font, legendX + padX, curY + Math.floor((itemHeight - 16) / 2), '5');
-                image.print(font, legendX + padX + 24, curY + Math.floor((itemHeight - 16) / 2), it.label);
-            } else if (it.type === 'blocked') {
-                const blockedSq = new Jimp(iconSize, iconSize, 0x444444FF);
-                image.composite(blockedSq, legendX + padX, curY + Math.floor((itemHeight - iconSize) / 2));
-                image.print(font, legendX + padX + iconSize + 8, curY + Math.floor((itemHeight - 16) / 2), it.label);
-            }
-            curY += itemHeight;
-        }
-    })();
+    // Legend removed from image — legend is provided in the embed instead.
 
     // centered title at bottom middle
     const title = 'Lake Yazzy';

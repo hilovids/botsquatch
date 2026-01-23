@@ -35,6 +35,7 @@ module.exports = {
             .setDescription(`Your location: ${camper.seachart_loc || 'Unplaced'}`)
             .setColor(0x003280)
             .setImage('attachment://seachart.png')
+            .addFields({ name: 'Legend', value: '🟡 You / Board star\n🟢 Dredged — Found\n⚪ Dredged — Nothing\nNumber: Items adjacent to this square\n⬛ Blocked cell' })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [viewEmbed], files: [{ attachment: buffer, name: 'seachart.png' }] });
