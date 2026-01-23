@@ -98,6 +98,13 @@ module.exports = {
             await campersCol.updateOne({ _id: sender._id }, { $inc: { ['inventory.' + item]: -quantity } });
             await campersCol.updateOne({ _id: target._id }, { $inc: { ['inventory.' + item]: quantity } });
 
+            // track star-giving stats when stars are traded
+            if (item === 'stars' && quantity > 0) {
+                try {
+                    await campersCol.updateOne({ _id: sender._id }, { $inc: { 'stats.starsGiven': quantity } });
+                } catch (e) { console.error('error updating starsGiven stat', e); }
+            }
+
             const updatedSender = await campersCol.findOne({ _id: sender._id });
             const updatedTarget = await campersCol.findOne({ _id: target._id });
             const senderNew = (updatedSender.inventory && typeof updatedSender.inventory[item] === 'number') ? updatedSender.inventory[item] : 0;

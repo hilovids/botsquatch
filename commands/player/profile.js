@@ -121,6 +121,16 @@ module.exports = {
                 { name: 'Choice % (R/P/S/H)', value: `✊ ${pct(rock)} / ✋ ${pct(paper)} / ✌️ ${pct(scissors)} / 🖐️ ${pct(hand)}`, inline: true }
             );
 
+            // Add star transfer/stolen stats
+            const starsGiven = (player.stats && typeof player.stats.starsGiven === 'number') ? player.stats.starsGiven : 0;
+            const starsStolen = (player.stats && typeof player.stats.starsStolen === 'number') ? player.stats.starsStolen : 0;
+            const starsLost = (player.stats && typeof player.stats.starsLost === 'number') ? player.stats.starsLost : 0;
+            embed.addFields(
+                { name: 'Stars Given', value: `${starsGiven}`, inline: true },
+                { name: 'Stars Stolen', value: `${starsStolen}`, inline: true },
+                { name: 'Stars Lost (stolen from)', value: `${starsLost}`, inline: true }
+            );
+
             await interaction.editReply({ embeds: [embed], files: attachment ? [attachment] : [] });
 
         } catch (err) {

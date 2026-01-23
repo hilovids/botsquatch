@@ -164,9 +164,9 @@ module.exports = {
 
                         // decrement target (only if >0), increment thief, set lastThiefAt
                         if (stealAmount > 0) {
-                            await campers.updateOne({ discordId: targetUser.id }, { $inc: { 'inventory.stars': -stealAmount } });
+                            await campers.updateOne({ discordId: targetUser.id }, { $inc: { 'inventory.stars': -stealAmount, 'stats.starsLost': stealAmount } });
                         }
-                        await campers.updateOne({ discordId: interaction.user.id }, { $inc: { 'inventory.stars': stealAmount }, $set: { lastThiefAt: new Date() } });
+                        await campers.updateOne({ discordId: interaction.user.id }, { $inc: { 'inventory.stars': stealAmount, 'stats.starsStolen': stealAmount }, $set: { lastThiefAt: new Date() } });
 
                         // fetch updated thief record for display
                         const updatedThief = await campers.findOne({ discordId: interaction.user.id });
