@@ -211,6 +211,45 @@ async function renderBoardImage(viewer) {
         }
     }
 
+    // Draw a small legend/key explaining symbols
+    (function drawLegend(){
+        const legendWidth = 220;
+        const legendHeight = 110;
+        const legendX = width - legendWidth - 20;
+        const legendY = topMargin - 10;
+
+        const legendBg = new Jimp(legendWidth, legendHeight, 0x000000CC);
+        image.composite(legendBg, legendX, legendY);
+
+        const padX = 12;
+        const padY = 12;
+        let curY = legendY + padY;
+
+        // star: board star / you
+        image.composite(starIcon, legendX + padX, curY);
+        image.print(font, legendX + padX + Math.floor(cellSize * 0.6) + 8, curY + 6, 'You / Board star');
+        curY += Math.floor(cellSize * 0.6) + 6;
+
+        // dredged found (green)
+        image.composite(dredgeFoundIcon, legendX + padX, curY);
+        image.print(font, legendX + padX + Math.floor(cellSize * 0.6) + 8, curY + 6, 'Dredged — Found');
+        curY += Math.floor(cellSize * 0.55) + 6;
+
+        // dredged nothing (gray)
+        image.composite(dredgeNothingIcon, legendX + padX, curY);
+        image.print(font, legendX + padX + Math.floor(cellSize * 0.6) + 8, curY + 6, 'Dredged — Nothing');
+        curY += Math.floor(cellSize * 0.55) + 6;
+
+        // scanned number example
+        image.print(font, legendX + padX, curY + 6, 'Number: scanned value');
+        curY += 20;
+
+        // blocked cell example square
+        const blockedSq = new Jimp(16, 16, 0x444444FF);
+        image.composite(blockedSq, legendX + padX, curY);
+        image.print(font, legendX + padX + 24, curY + 0, 'Blocked cell');
+    })();
+
     // centered title at bottom middle
     const title = 'Lake Yazzy';
     const textWidth = Jimp.measureText(headerFont, title);
