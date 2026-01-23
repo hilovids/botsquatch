@@ -94,7 +94,7 @@ async function renderBoardImage(viewer) {
     const width = leftMargin + cols * cellSize + 40;
     const height = topMargin + rows * cellSize + 100;
 
-    const image = new Jimp(width, height, 0x1e487aff);
+    const image = new Jimp(width, height, 0x003280FF);
     const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
     const headerFont = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE);
 
