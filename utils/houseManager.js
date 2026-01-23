@@ -56,6 +56,7 @@ async function performHouseStarRefill() {
 // Combined maintenance operation run weekly by the scheduler
 async function performWeeklyMaintenance() {
     try {
+        console.log('performWeeklyMaintenance: start');
         // Guard: avoid running more often than every 24 hours
         const now = new Date();
         try {
@@ -92,7 +93,9 @@ async function performWeeklyMaintenance() {
 
             // also perform house RPS refill and grant R/P/S to campers in parallel
             const [rpsRes, grantRes] = await Promise.allSettled([performWeeklyRpsRefill(), performCamperGrant()]);
-            return { ok: true, redistributed: { perCamperExtra: extraPer, remainder }, rps: rpsRes.status === 'fulfilled' ? rpsRes.value : { ok: false, error: String(rpsRes.reason) }, campers: grantRes.status === 'fulfilled' ? grantRes.value : { ok: false, error: String(grantRes.reason) } };
+            const result = { ok: true, redistributed: { perCamperExtra: extraPer, remainder }, rps: rpsRes.status === 'fulfilled' ? rpsRes.value : { ok: false, error: String(rpsRes.reason) }, campers: grantRes.status === 'fulfilled' ? grantRes.value : { ok: false, error: String(grantRes.reason) } };
+            console.log('performWeeklyMaintenance: completed', result);
+            return result;
         } catch (e) {
             console.error('performWeeklyMaintenance redistribution error', e);
             return { ok: false, error: String(e) };
@@ -108,20 +111,6 @@ async function startDailyNotifier(client) {
     const col = db.collection('gambling_state');
     const discordConfigs = db.collection('discordConfigs');
     const miniStatsCol = db.collection('minigame_stats');
-
-    function msToHuman(ms) {
-        if (ms <= 0) return 'Due now';
-        const sec = Math.floor(ms / 1000);
-        const days = Math.floor(sec / 86400);
-        const hours = Math.floor((sec % 86400) / 3600);
-        const minutes = Math.floor((sec % 3600) / 60);
-        const parts = [];
-        if (days) parts.push(`${days}d`);
-        if (hours) parts.push(`${hours}h`);
-        if (minutes) parts.push(`${minutes}m`);
-        if (parts.length === 0) return '<1m';
-        return parts.join(' ');
-    }
 
     async function postOnce() {
         try {

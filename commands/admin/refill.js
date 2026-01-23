@@ -9,6 +9,7 @@ module.exports = {
             .addChoices(
                 { name: 'House RPS (weekly refill)', value: 'rps_house' },
                 { name: 'Daily camper refresh (give R/P/S)', value: 'campers_daily' },
+                { name: 'Redistribute Star Pool (daily refill)', value: 'redistribute' },
                 { name: 'Both', value: 'both' }
             ))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
@@ -27,6 +28,11 @@ module.exports = {
                 const d = await performDailyCamperRefresh();
                 if (d && d.ok) results.push('Daily camper refresh: OK');
                 else results.push(`Daily camper refresh: Failed (${d && d.error ? d.error : 'unknown'})`);
+            }
+            if (scope === 'redistribute' || scope === 'both') {
+                const m = await require('../../utils/houseManager').performWeeklyMaintenance();
+                if (m && m.ok) results.push(`Redistribute star pool: OK (perPlayerExtra=${m.redistributed && m.redistributed.perCamperExtra}, remainder=${m.redistributed && m.redistributed.remainder})`);
+                else results.push(`Redistribute star pool: Failed (${m && m.error ? m.error : 'unknown'})`);
             }
 
             const embed = new EmbedBuilder().setTitle('Refill Results').setDescription(results.join('\n')).setColor(0x00AE86).setTimestamp();
