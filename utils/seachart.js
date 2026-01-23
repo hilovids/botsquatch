@@ -211,43 +211,48 @@ async function renderBoardImage(viewer) {
         }
     }
 
-    // Draw a small legend/key explaining symbols
+    // Draw a small legend/key explaining symbols (bottom-right, consistent spacing)
     (function drawLegend(){
-        const legendWidth = 220;
-        const legendHeight = 110;
-        const legendX = width - legendWidth - 20;
-        const legendY = topMargin - 10;
-
-        const legendBg = new Jimp(legendWidth, legendHeight, 0x000000CC);
-        image.composite(legendBg, legendX, legendY);
+        const items = [
+            { type: 'star', label: 'You / Board star', icon: starIcon },
+            { type: 'dredge_found', label: 'Dredged — Found', icon: dredgeFoundIcon },
+            { type: 'dredge_none', label: 'Dredged — Nothing', icon: dredgeNothingIcon },
+            { type: 'number', label: 'Number: scanned value' },
+            { type: 'blocked', label: 'Blocked cell' }
+        ];
 
         const padX = 12;
         const padY = 12;
+        const iconSize = Math.max(16, Math.floor(cellSize * 0.55));
+        const itemHeight = Math.max(iconSize, Math.floor(cellSize * 0.6)) + 8; // icon/text height + gap
+        const legendWidth = 240;
+        const legendHeight = padY * 2 + items.length * itemHeight;
+
+        // place legend above bottom title area
+        const bottomMargin = 100;
+        const legendX = width - legendWidth - 20;
+        const legendY = Math.max(topMargin, height - legendHeight - bottomMargin);
+
+        const legendBg = new Jimp(legendWidth, legendHeight, 0x000000FF);
+        image.composite(legendBg, legendX, legendY);
+
         let curY = legendY + padY;
-
-        // star: board star / you
-        image.composite(starIcon, legendX + padX, curY);
-        image.print(font, legendX + padX + Math.floor(cellSize * 0.6) + 8, curY + 6, 'You / Board star');
-        curY += Math.floor(cellSize * 0.6) + 6;
-
-        // dredged found (green)
-        image.composite(dredgeFoundIcon, legendX + padX, curY);
-        image.print(font, legendX + padX + Math.floor(cellSize * 0.6) + 8, curY + 6, 'Dredged — Found');
-        curY += Math.floor(cellSize * 0.55) + 6;
-
-        // dredged nothing (gray)
-        image.composite(dredgeNothingIcon, legendX + padX, curY);
-        image.print(font, legendX + padX + Math.floor(cellSize * 0.6) + 8, curY + 6, 'Dredged — Nothing');
-        curY += Math.floor(cellSize * 0.55) + 6;
-
-        // scanned number example
-        image.print(font, legendX + padX, curY + 6, 'Number: scanned value');
-        curY += 20;
-
-        // blocked cell example square
-        const blockedSq = new Jimp(16, 16, 0x444444FF);
-        image.composite(blockedSq, legendX + padX, curY);
-        image.print(font, legendX + padX + 24, curY + 0, 'Blocked cell');
+        for (const it of items) {
+            if (it.icon) {
+                const icon = it.icon;
+                image.composite(icon, legendX + padX, curY + Math.floor((itemHeight - icon.bitmap.height) / 2));
+                image.print(font, legendX + padX + icon.bitmap.width + 8, curY + Math.floor((itemHeight - 16) / 2), it.label);
+            } else if (it.type === 'number') {
+                // draw a sample number aligned like board numbers
+                image.print(font, legendX + padX, curY + Math.floor((itemHeight - 16) / 2), '5');
+                image.print(font, legendX + padX + 24, curY + Math.floor((itemHeight - 16) / 2), it.label);
+            } else if (it.type === 'blocked') {
+                const blockedSq = new Jimp(iconSize, iconSize, 0x444444FF);
+                image.composite(blockedSq, legendX + padX, curY + Math.floor((itemHeight - iconSize) / 2));
+                image.print(font, legendX + padX + iconSize + 8, curY + Math.floor((itemHeight - 16) / 2), it.label);
+            }
+            curY += itemHeight;
+        }
     })();
 
     // centered title at bottom middle
