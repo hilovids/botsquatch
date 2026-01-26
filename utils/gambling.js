@@ -3,6 +3,7 @@ const { connectToMongo } = require('./mongodbUtil');
 const { randomUUID } = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const busyManager = require('./busyManager');
 
 // in-memory sessions: sessionId -> { userId, guildId, type, state, timeout }
 const sessions = new Map();
@@ -123,6 +124,7 @@ function makeTimeout(sessionId, ms = 3 * 60 * 1000) {
                 try { await s.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
             }
         } catch (e) { console.error('gamble timeout error', e); }
+        try { if (s && s.userId) busyManager.clearBusy(s.userId); } catch (e) {}
         sessions.delete(sessionId);
     }, ms);
 }
@@ -174,7 +176,9 @@ async function startGamble(interaction, game, betType, betAmount) {
     const sessionId = randomUUID();
     const session = { id: sessionId, userId: interaction.user.id, guildId: interaction.guildId, game, bet: betAmount, betType, refundOnTimeout: false, startInventory };
     sessions.set(sessionId, session);
-    session.timeout = makeTimeout(sessionId);
+    const TIMEOUT_MS = 3 * 60 * 1000; // match makeTimeout default
+    session.timeout = makeTimeout(sessionId, TIMEOUT_MS);
+    try { busyManager.setBusy(interaction.user.id, `gamble:${sessionId}`, TIMEOUT_MS + 2000); } catch (e) {}
 
     // create initial embed and components depending on game
     if (game === 'card') {
@@ -428,6 +432,7 @@ async function handleButtonInteraction(customId, interaction) {
             }
             try { await session.message.edit({ embeds: [embed], files: revealPath ? [{ attachment: revealPath, name: path.basename(revealPath) }] : [], components: [] }); } catch (e) {}
 
+            try { if (session && session.userId) busyManager.clearBusy(session.userId); } catch (e) {}
             sessions.delete(sessionId);
             await interaction.reply({ content: won ? `You won ${actualChange} ${session.betType}! You now have ${remaining} ${session.betType}.` : `You lost ${session.bet} ${session.betType}. You now have ${remaining} ${session.betType}.`, ephemeral: true });
             return true;
@@ -461,6 +466,7 @@ async function handleButtonInteraction(customId, interaction) {
                         { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true }
                     );
                     try { await session.message.edit({ embeds: [embed], components: [] }); } catch (e) {}
+                    try { if (session && session.userId) busyManager.clearBusy(session.userId); } catch (e) {}
                     sessions.delete(session.id);
                     await interaction.reply({ content: `You busted and lost ${session.bet} ${session.betType}. You now have ${remaining} ${session.betType}.`, ephemeral: true });
                     return true;
@@ -579,7 +585,8 @@ async function handleButtonInteraction(customId, interaction) {
                     await interaction.reply({ content: `You lost ${session.bet} ${session.betType}. You now have ${remaining} ${session.betType}.`, ephemeral: true });
                 }
 
-                sessions.delete(session.id);
+                    try { if (session && session.userId) busyManager.clearBusy(session.userId); } catch (e) {}
+                    sessions.delete(session.id);
                 return true;
             }
 
@@ -598,6 +605,7 @@ async function handleButtonInteraction(customId, interaction) {
                 const em = new EmbedBuilder().setTitle('No Profile').setDescription('Could not find your player record.').setColor(embedColor);
                 if (thumbnail) em.setThumbnail(thumbnail);
                 try { await interaction.reply({ embeds: [em], ephemeral: true }); } catch (e) {}
+                try { if (session && session.userId) busyManager.clearBusy(session.userId); } catch (e) {}
                 sessions.delete(session.id);
                 return true;
             }
@@ -702,6 +710,7 @@ async function handleButtonInteraction(customId, interaction) {
             const actualChange = remaining - startInv;
             embed.addFields({ name: 'Winnings', value: result === 'win' ? `+${actualChange || 0} ${session.betType}` : `0 ${session.betType}`, inline: true }, { name: 'Inventory', value: `${remaining} ${session.betType}`, inline: true });
             try { await session.message.edit({ embeds: [embed], components: [], files: [ ...(playerImg ? [{ attachment: playerImg, name: path.basename(playerImg) }] : []), ...(botImg ? [{ attachment: botImg, name: path.basename(botImg) }] : []) ] }); } catch (e) {}
+            try { if (session && session.userId) busyManager.clearBusy(session.userId); } catch (e) {}
             sessions.delete(session.id);
             await interaction.reply({ content: `${humanResult} You now have ${remaining || 0} ${session.betType}.`, ephemeral: true });
             return true;
@@ -712,6 +721,7 @@ async function handleButtonInteraction(customId, interaction) {
             const errEmbed = new EmbedBuilder().setTitle('Error').setDescription('There was an error processing your gamble.').setColor(0xFF0000);
             await interaction.reply({ embeds: [errEmbed], ephemeral: true });
         } catch (e) {}
+        try { const s = sessions.get(sessionId); if (s && s.userId) busyManager.clearBusy(s.userId); } catch (e) {}
         sessions.delete(sessionId);
         return true;
     }

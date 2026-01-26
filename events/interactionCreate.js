@@ -1,5 +1,6 @@
 const { Events, ActionRowBuilder, ButtonBuilder, StringSelectMenuBuilder, EmbedBuilder } = require('discord.js');
 const { connectToMongo } = require('../utils/mongodbUtil');
+const busyManager = require('../utils/busyManager');
 const { ObjectId } = require('mongodb');
 const Jimp = require('jimp');
 const path = require('path');
@@ -12,6 +13,27 @@ module.exports = {
 			// Vote button: customId => "vote:<camperId>"
 			if (interaction.isButton()) {
 				const cid = interaction.customId || '';
+				// busy guard: block component interactions when user is busy
+				try {
+					if (interaction && interaction.user && busyManager.isBusy(interaction.user.id)) {
+						const reason = busyManager.getReason(interaction.user.id) || 'another action';
+						// allow gamble buttons if the busy reason matches the gamble session id
+						if (cid.startsWith('gamble:')) {
+							const parts = cid.split(':');
+							const sessId = parts[1];
+							if (reason === `gamble:${sessId}`) {
+								// allow through to gambling handler
+							} else {
+								await interaction.reply({ content: `You are currently waiting on ${reason} and cannot use this button.`, ephemeral: true }).catch(() => {});
+								return;
+							}
+						} else {
+							await interaction.reply({ content: `You are currently waiting on ${reason} and cannot use this button.`, ephemeral: true }).catch(() => {});
+							return;
+						}
+					}
+				} catch (busyErr) { console.error('component busy check error', busyErr); }
+
 				// route gamble interactions to gambling handler
 				if (cid.startsWith('gamble:')) {
 					try {
@@ -552,6 +574,21 @@ module.exports = {
 			}
 		} catch (lockErr) {
 			console.error('seachart lock check error', lockErr);
+		}
+
+		// Prevent users from starting chat commands while they are marked busy
+		try {
+			if (interaction && interaction.user && busyManager.isBusy(interaction.user.id)) {
+				const reason = busyManager.getReason(interaction.user.id) || 'another action';
+				if (interaction.replied || interaction.deferred) {
+					await interaction.followUp({ content: `You are currently waiting on ${reason} and cannot run other commands.`, ephemeral: true }).catch(() => {});
+				} else {
+					await interaction.reply({ content: `You are currently waiting on ${reason} and cannot run other commands.`, ephemeral: true }).catch(() => {});
+				}
+				return; // block execution
+			}
+		} catch (busyErr) {
+			console.error('busy check error', busyErr);
 		}
 
 		try {

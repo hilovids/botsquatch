@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
+const busyManager = require('../../utils/busyManager');
 
 const JOIN_TIMEOUT = 30 * 1000; // 30s for join/wagers/choices
 
@@ -38,6 +39,9 @@ module.exports = {
 
             const msg = await interaction.editReply({ embeds: [embed], components: [row] });
 
+            // mark challenger busy while waiting for someone to join
+            try { busyManager.setBusy(interaction.user.id, 'rps:waiting_for_join', 10 * 60 * 1000); } catch (e) {}
+
             // wait for someone else to click join
             const filter = i => i.customId === 'rps:join' && i.user.id !== interaction.user.id;
             try {
@@ -50,6 +54,7 @@ module.exports = {
                     await joinInteraction.reply({ embeds: [err], ephemeral: true });
                     // leave original message as-is but remove button
                     try { await msg.edit({ components: [] }); } catch (e) {}
+                    try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
                     return;
                 }
 
@@ -58,6 +63,9 @@ module.exports = {
                 if (thumbnail) updated.setThumbnail(thumbnail);
                 try { await msg.edit({ embeds: [updated], components: [] }); } catch (e) {}
                 await joinInteraction.reply({ content: `You joined the match with ${interaction.user}. Check your confessional channel.`, ephemeral: true });
+
+                // mark joiner busy for the match
+                try { busyManager.setBusy(joinInteraction.user.id, 'rps:in_match', 10 * 60 * 1000); } catch (e) {}
 
                 // DM both players asking for wager (stars only)
                 const aUser = interaction.user;
@@ -73,6 +81,8 @@ module.exports = {
                             if (thumbnail) err.setThumbnail(thumbnail);
                             await interaction.followUp({ embeds: [err] });
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Cancelled').setDescription('A player has no confessional configured.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         const chan = await interaction.client.channels.fetch(String(doc.confessionalId)).catch(() => null);
@@ -81,6 +91,8 @@ module.exports = {
                             if (thumbnail) err.setThumbnail(thumbnail);
                             await interaction.followUp({ embeds: [err] });
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Cancelled').setDescription('A player\'s confessional could not be reached.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         const embedW = new EmbedBuilder().setTitle('RPS Wager').setDescription('How many stars would you like to wager? Reply with a positive integer. You must wager at least 1 and no more than you own.').setColor(embedColor);
@@ -88,6 +100,8 @@ module.exports = {
                         const prompt = await chan.send({ embeds: [embedW] }).catch(() => null);
                         if (!prompt) {
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Cancelled').setDescription('Could not deliver wager prompt; match cancelled.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         const collected = await chan.awaitMessages({ filter: m => m.author.id === user.id, max: 1, time: JOIN_TIMEOUT });
@@ -95,6 +109,8 @@ module.exports = {
                         if (!reply) {
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Timed Out').setDescription('One or both players failed to submit a valid wager in time.').setColor(0xFF0000)], components: [] }); } catch (e) {}
                             try { await chan.send({ embeds: [new EmbedBuilder().setTitle('Timed Out').setDescription('You did not submit a wager in time.').setColor(0xFF0000)] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         const num = parseInt(reply.content, 10);
@@ -104,12 +120,16 @@ module.exports = {
                             if (thumbnail) err.setThumbnail(thumbnail);
                             await chan.send({ embeds: [err] }).catch(() => null);
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Cancelled').setDescription('A player submitted an invalid wager.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         await chan.send({ content: `You wagered ${num} stars.` }).catch(() => null);
                         return num;
                     } catch (e) {
                         try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Error').setDescription('An error occurred while collecting wagers.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                        try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                        try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                         return null;
                     }
                 }
@@ -121,6 +141,8 @@ module.exports = {
                     const tOut = new EmbedBuilder().setTitle('Match Timed Out').setDescription('One or both players failed to submit a valid wager in time.').setColor(0xFF0000);
                     if (thumbnail) tOut.setThumbnail(thumbnail);
                     try { await msg.edit({ embeds: [tOut] }); } catch (e) {}
+                    try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                    try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                     return;
                 }
 
@@ -129,11 +151,15 @@ module.exports = {
                     try {
                         if (!doc || !doc.confessionalId) {
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Cancelled').setDescription('A player has no confessional configured.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         const chan = await interaction.client.channels.fetch(String(doc.confessionalId)).catch(() => null);
                         if (!chan) {
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Cancelled').setDescription('A player\'s confessional could not be reached.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         const hasElder = Math.random() <= 0.01; // 1% chance
@@ -150,6 +176,8 @@ module.exports = {
                         const m = await chan.send({ embeds: [em], components: [row] }).catch(() => null);
                         if (!m) {
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Cancelled').setDescription('Could not deliver choice prompt; match cancelled.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                         try {
@@ -163,10 +191,14 @@ module.exports = {
                         } catch (e) {
                             try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Timed Out').setDescription('One or both players failed to choose in time.').setColor(0xFF0000)], components: [] }); } catch (e) {}
                             try { await chan.send({ embeds: [new EmbedBuilder().setTitle('Timed Out').setDescription('You did not choose in time.').setColor(0xFF0000)] }); } catch (e) {}
+                            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                            try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                             return null;
                         }
                     } catch (e) {
                         try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('Match Error').setDescription('An error occurred while collecting choices.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                        try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                        try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                         return null;
                     }
                 }
@@ -176,6 +208,8 @@ module.exports = {
                     const tOut = new EmbedBuilder().setTitle('Match Timed Out').setDescription('One or both players failed to choose in time.').setColor(0xFF0000);
                     if (thumbnail) tOut.setThumbnail(thumbnail);
                     try { await msg.edit({ embeds: [tOut] }); } catch (e) {}
+                    try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                    try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
                     return;
                 }
 
@@ -248,9 +282,14 @@ module.exports = {
                     }
                 } catch (e) {}
 
+                // clear busy state for both players
+                try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
+                try { busyManager.clearBusy(joinInteraction.user.id); } catch (e) {}
+
             } catch (e) {
                 // join timeout
                 try { await msg.edit({ embeds: [new EmbedBuilder().setTitle('No Join').setDescription('No one joined the match in time.').setColor(0xFF0000)], components: [] }); } catch (e) {}
+                try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
                 return;
             }
 

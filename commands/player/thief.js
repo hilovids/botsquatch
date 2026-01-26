@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
 const fs = require('fs');
 const path = require('path');
+const busyManager = require('../../utils/busyManager');
 // track users who currently have a pending /thief in progress
 const pendingThief = new Set();
 
@@ -72,9 +73,9 @@ module.exports = {
                 return await interaction.editReply({ embeds: [e], ephemeral: true });
             }
 
-            // Prevent the thief from starting another /thief while one is pending
-            if (pendingThief.has(String(interaction.user.id))) {
-                const e = new EmbedBuilder().setTitle('Already Pending').setDescription('You already have a pending /thief attempt. Wait until it resolves.').setColor(0xFF0000);
+            // Prevent the thief from starting another /thief while one is pending (or if busy)
+            if (pendingThief.has(String(interaction.user.id)) || busyManager.isBusy(interaction.user.id)) {
+                const e = new EmbedBuilder().setTitle('Already Pending').setDescription('You already have a pending /thief attempt or are busy. Wait until it resolves.').setColor(0xFF0000);
                 if (thumbnail) e.setThumbnail(thumbnail);
                 return await interaction.editReply({ embeds: [e], ephemeral: true });
             }
@@ -126,6 +127,7 @@ module.exports = {
             if (thumbnail) pending.setThumbnail(thumbnail);
             // mark this user as having a pending thief attempt
             pendingThief.add(String(interaction.user.id));
+            try { busyManager.setBusy(interaction.user.id, 'thief:pending', timeoutMs + 1000); } catch (e) {}
             await interaction.editReply({ embeds: [pending], ephemeral: true });
 
             // create collector on destChannel for BLOCK message from targetUser
@@ -212,6 +214,7 @@ module.exports = {
                     }
                 } finally {
                     pendingThief.delete(String(interaction.user.id));
+                    try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
                 }
             });
 
@@ -219,6 +222,7 @@ module.exports = {
             console.error('thief command error', err);
             // ensure pending lock cleared if something failed after it was set
             try { pendingThief.delete(String(interaction.user.id)); } catch (e) {}
+            try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
             try { await interaction.editReply({ content: 'There was an error running /thief.', ephemeral: true }); } catch (e) {}
         }
     }
