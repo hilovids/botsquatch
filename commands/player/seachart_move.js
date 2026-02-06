@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { EmbedBuilder } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
-const { getBoard, ensurePlaced, isNewLocalDay, canReach } = require('../../utils/seachart');
+const { getBoard, ensurePlaced, isNewLocalDay, nextSeachartAvailable, canReach } = require('../../utils/seachart');
 
 async function isValidGridSpace15(str){
   if(!str) return false;
@@ -99,10 +99,12 @@ module.exports = {
     }
 
     if (!isNewLocalDay(camper.lastDredged, camper.timezone || 'UTC')){
+      const ts = nextSeachartAvailable(camper.lastDredged);
+      const when = ts ? `<t:${ts}:R>` : 'soon';
       const exampleEmbed = new EmbedBuilder()
         .setColor(0x003280)
-        .setTitle(`You already used this command today.`)
-        .setDescription(`Try again tomorrow according to your timezone.`)
+        .setTitle(`You already used this command.`)
+        .setDescription(`You can use it again ${when}`)
         .setTimestamp();
       await interaction.reply({ embeds: [exampleEmbed] });
       return;

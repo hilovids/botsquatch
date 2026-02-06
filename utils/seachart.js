@@ -68,19 +68,29 @@ async function ensurePlaced(campersColl, camper) {
     return chosen;
 }
 
+// Returns true only if at least 3 full days (72 hours) have passed since lastDate
 function isNewLocalDay(lastDate, timezone) {
     if (!lastDate) return true;
     try {
-        const nowStr = new Date().toLocaleString('en-US', { timeZone: timezone });
-        const lastStr = new Date(lastDate).toLocaleString('en-US', { timeZone: timezone });
-        const nowDate = new Date(nowStr);
-        const last = new Date(lastStr);
-        return nowDate.getFullYear() !== last.getFullYear() || nowDate.getMonth() !== last.getMonth() || nowDate.getDate() !== last.getDate();
-    } catch (e) {
-        // if timezone invalid, fallback to UTC-day comparison
-        const now = new Date();
         const last = new Date(lastDate);
-        return now.getUTCFullYear() !== last.getUTCFullYear() || now.getUTCMonth() !== last.getUTCMonth() || now.getUTCDate() !== last.getUTCDate();
+        const now = new Date();
+        const diff = now.getTime() - last.getTime();
+        return diff >= 3 * 24 * 60 * 60 * 1000;
+    } catch (e) {
+        // on error, be conservative and say it's not a new day
+        return false;
+    }
+}
+
+// Returns a unix timestamp (seconds) when the user will next be allowed to use the daily seachart action
+function nextSeachartAvailable(lastDate) {
+    if (!lastDate) return 0;
+    try {
+        const last = new Date(lastDate);
+        const next = new Date(last.getTime() + 3 * 24 * 60 * 60 * 1000);
+        return Math.floor(next.getTime() / 1000);
+    } catch (e) {
+        return 0;
     }
 }
 
@@ -302,7 +312,7 @@ async function handleFindItem(db, camper, pos) {
     return { type, image: itemImagePathForType(item.imageKey || type), text: `You found ${type} at ${position}!` };
 }
 
-module.exports = { getBoard, loadBoardFromFile, ensurePlaced, isNewLocalDay, renderBoardImage, handleFindItem };
+module.exports = { getBoard, loadBoardFromFile, ensurePlaced, isNewLocalDay, nextSeachartAvailable, renderBoardImage, handleFindItem };
 // pathfinding helper: canReach(startPos, targetPos, maxSteps)
 async function canReach(startPos, targetPos, maxSteps) {
     const board = await getBoard();
