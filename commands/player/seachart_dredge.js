@@ -103,8 +103,8 @@ module.exports = {
       const when = ts ? `<t:${ts}:R>` : 'soon';
       const exampleEmbed = new EmbedBuilder()
         .setColor(0x003280)
-        .setTitle(`You already used this command.`)
-        .setDescription(`You can use it again ${when}`)
+        .setTitle(`You already used a command.`)
+        .setDescription(`You can use another again ${when}`)
         .setTimestamp();
       await interaction.reply({ embeds: [exampleEmbed] });
       return;
