@@ -147,8 +147,34 @@ module.exports = {
                 if (thumbnail) doneEmbed.setThumbnail(thumbnail);
                 if (arrestedImg) doneEmbed.setImage('attachment://arrested' + path.extname(arrestedImg));
                 try { await sentMsg.edit({ embeds: [doneEmbed], files: arrestedImg ? [{ attachment: arrestedImg, name: 'arrested' + path.extname(arrestedImg) }] : [], components: [] }); } catch (e) {}
-                // release pending lock
+                // notify the thief that their attempt was thwarted
+                try {
+                    const thwartEmbed = new EmbedBuilder()
+                        .setTitle('Robbery Thwarted')
+                        .setDescription(`Your attempt to steal ${amount} star${amount===1?'':'s'} from ${targetUser.username} was blocked.`)
+                        .setColor(0xFF0000)
+                        .setTimestamp();
+                    if (thumbnail) thwartEmbed.setThumbnail(thumbnail);
+                    if (arrestedImg) thwartEmbed.setImage('attachment://arrested' + path.extname(arrestedImg));
+
+                    if (thief.confessionalId) {
+                        const ch = await interaction.client.channels.fetch(thief.confessionalId).catch(() => null);
+                        if (ch) await ch.send({ embeds: [thwartEmbed], files: arrestedImg ? [{ attachment: arrestedImg, name: 'arrested' + path.extname(arrestedImg) }] : [] }).catch(() => null);
+                        else {
+                            const u = await interaction.client.users.fetch(interaction.user.id).catch(() => null);
+                            if (u) await u.send({ embeds: [thwartEmbed] }).catch(() => null);
+                        }
+                    } else {
+                        const u = await interaction.client.users.fetch(interaction.user.id).catch(() => null);
+                        if (u) await u.send({ embeds: [thwartEmbed] }).catch(() => null);
+                    }
+                } catch (err) {
+                    console.error('thief notify blocked error', err);
+                }
+
+                // release pending lock and clear busy state
                 pendingThief.delete(String(interaction.user.id));
+                try { busyManager.clearBusy(interaction.user.id); } catch (e) {}
                 collector.stop('blocked');
             });
 
