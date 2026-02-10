@@ -106,6 +106,7 @@ async function renderBoardImage(viewer) {
 
     const image = new Jimp(width, height, 0x003280FF);
     const font = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
+    const fontBlack = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
     const headerFont = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE);
 
     // Draw column letter headers (letters across the top)
@@ -183,19 +184,7 @@ async function renderBoardImage(viewer) {
     const dredgeFoundIcon = await createDredgeIcon(Math.floor(cellSize * 0.55), 0x00FF00FF); // green
     const dredgeNothingIcon = await createDredgeIcon(Math.floor(cellSize * 0.55), 0x808080FF); // gray
 
-    // render scanned numbers (viewer-specific) with star priority
-    for (const [posKey, val] of Object.entries(scanned)) {
-        const pos = posKey.toUpperCase();
-        const xy = posToXY(pos);
-        if (!xy) continue;
-        if (boardStars.includes(pos)) {
-            image.composite(starIcon, xy.x + Math.floor((cellSize - starIcon.bitmap.width) / 2) + 2, xy.y + Math.floor((cellSize - starIcon.bitmap.height) / 2) + 2);
-            continue;
-        }
-        image.print(font, xy.x + Math.floor(cellSize / 2) - 6, xy.y + Math.floor(cellSize / 2) - 10, String(val));
-    }
-
-    // render dredged icons so they stand out from numbers
+    // render dredged icons so they sit on top of background but below numbers
     for (const [posKey, state] of Object.entries(dredged)) {
         const pos = posKey.toUpperCase();
         const xy = posToXY(pos);
@@ -205,6 +194,43 @@ async function renderBoardImage(viewer) {
         image.composite(icon, xy.x + Math.floor((cellSize - icon.bitmap.width) / 2) + 2, xy.y + Math.floor((cellSize - icon.bitmap.height) / 2) + 2);
     }
 
+    // helper to create a thin border image for player's cell
+    function createCellBorder(size, thickness, hex) {
+        const img = new Jimp(size, size, 0x00000000);
+        const w = size;
+        const h = size;
+        for (let t = 0; t < thickness; t++) {
+            // top and bottom
+            for (let x = t; x < w - t; x++) img.setPixelColor(hex, x, t);
+            for (let x = t; x < w - t; x++) img.setPixelColor(hex, x, h - 1 - t);
+            // left and right
+            for (let y = t; y < h - t; y++) img.setPixelColor(hex, t, y);
+            for (let y = t; y < h - t; y++) img.setPixelColor(hex, w - 1 - t, y);
+        }
+        return img;
+    }
+
+    // render scanned numbers (viewer-specific) with star priority; draw black outline then white
+    for (const [posKey, val] of Object.entries(scanned)) {
+        const pos = posKey.toUpperCase();
+        const xy = posToXY(pos);
+        if (!xy) continue;
+        if (boardStars.includes(pos)) {
+            image.composite(starIcon, xy.x + Math.floor((cellSize - starIcon.bitmap.width) / 2) + 2, xy.y + Math.floor((cellSize - starIcon.bitmap.height) / 2) + 2);
+            continue;
+        }
+        const txt = String(val);
+        const tx = xy.x + Math.floor(cellSize / 2) - 6;
+        const ty = xy.y + Math.floor(cellSize / 2) - 10;
+        // draw black outline by printing black font at offsets
+        const offsets = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1],[-1,1],[1,-1]];
+        for (const off of offsets) {
+            image.print(fontBlack, tx + off[0], ty + off[1], txt);
+        }
+        // draw white text on top
+        image.print(font, tx, ty, txt);
+    }
+
     // render board stars (visible regardless)
     // for (const s of boardStars) {
     //     const xy = posToXY(s);
@@ -212,12 +238,14 @@ async function renderBoardImage(viewer) {
     //     image.composite(starIcon, xy.x + Math.floor((cellSize - starIcon.bitmap.width) / 2) + 2, xy.y + Math.floor((cellSize - starIcon.bitmap.height) / 2) + 2);
     // }
 
-    // render viewer marker (star icon) at viewer location
+    // render viewer cell border (white) instead of a filled star so it doesn't obscure numbers
     if (viewer && viewer.seachart_loc) {
         const vpos = viewer.seachart_loc.toUpperCase();
         const vxy = posToXY(vpos);
         if (vxy) {
-            image.composite(starIcon, vxy.x + Math.floor((cellSize - starIcon.bitmap.width) / 2) + 2, vxy.y + Math.floor((cellSize - starIcon.bitmap.height) / 2) + 2);
+            const innerSize = cellSize - 4; // matches cell content size
+            const border = createCellBorder(innerSize, 2, 0xFFFFFFFF);
+            image.composite(border, vxy.x + 2, vxy.y + 2);
         }
     }
 
