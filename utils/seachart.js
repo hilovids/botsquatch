@@ -146,25 +146,25 @@ async function renderBoardImage(viewer) {
     }
 
     // create a simple star icon
-    async function createStarIcon(size) {
-        const icon = new Jimp(size, size, 0x00000000);
-        const center = size / 2;
-        const radius = Math.floor(size / 2 - 1);
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                const dx = x - center + 0.5;
-                const dy = y - center + 0.5;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d <= radius) icon.setPixelColor(0xFFFF00FF, x, y);
-            }
-        }
-        return icon;
-    }
+    // async function createStarIcon(size) {
+    //     const icon = new Jimp(size, size, 0x00000000);
+    //     const center = size / 2;
+    //     const radius = Math.floor(size / 2 - 1);
+    //     for (let y = 0; y < size; y++) {
+    //         for (let x = 0; x < size; x++) {
+    //             const dx = x - center + 0.5;
+    //             const dy = y - center + 0.5;
+    //             const d = Math.sqrt(dx * dx + dy * dy);
+    //             if (d <= radius) icon.setPixelColor(0xFFFF00FF, x, y);
+    //         }
+    //     }
+    //     return icon;
+    // }
 
     const scanned = (viewer && viewer.seachart_scans) || {};
     const dredged = (viewer && viewer.seachart_dredged) || {};
-    const boardStars = (board.stars || []).map(s => s.toUpperCase());
-    const starIcon = await createStarIcon(Math.floor(cellSize * 0.6));
+    // const boardStars = (board.stars || []).map(s => s.toUpperCase());
+    // const starIcon = await createStarIcon(Math.floor(cellSize * 0.6));
 
     // create dredge icons
     async function createDredgeIcon(size, hex) {
@@ -215,10 +215,10 @@ async function renderBoardImage(viewer) {
         const pos = posKey.toUpperCase();
         const xy = posToXY(pos);
         if (!xy) continue;
-        if (boardStars.includes(pos)) {
-            image.composite(starIcon, xy.x + Math.floor((cellSize - starIcon.bitmap.width) / 2) + 2, xy.y + Math.floor((cellSize - starIcon.bitmap.height) / 2) + 2);
-            continue;
-        }
+        // if (boardStars.includes(pos)) {
+        //     image.composite(starIcon, xy.x + Math.floor((cellSize - starIcon.bitmap.width) / 2) + 2, xy.y + Math.floor((cellSize - starIcon.bitmap.height) / 2) + 2);
+        //     continue;
+        // }
         const txt = String(val);
         const tx = xy.x + Math.floor(cellSize / 2) - 6;
         const ty = xy.y + Math.floor(cellSize / 2) - 10;
