@@ -38,7 +38,7 @@ module.exports = {
 
                     const guildId = doc.guildId;
                     const discordConfig = await discordConfigs.findOne({ server_id: guildId });
-                    const channelId = discordConfig && discordConfig.campground_id;
+                    const channelId = discordConfig && discordConfig.vote_channel_id;
                     if (!channelId) return;
 
                     const channel = await client.channels.fetch(channelId).catch(() => null);

@@ -89,7 +89,7 @@ module.exports = {
             const formattedTeam = team === 'wolves' ? 'Witless Wolves' : `Foolish Ferrets`;
 
             let campground;
-            try { campground = await client.channels.fetch(discordConfig.campground_id); } catch (e) { campground = null; }
+            try { campground = await client.channels.fetch(discordConfig.vote_channel_id); } catch (e) { campground = null; }
 
             const embed = new EmbedBuilder()
                 .setColor(color)
