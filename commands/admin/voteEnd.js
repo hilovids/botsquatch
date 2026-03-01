@@ -30,7 +30,7 @@ module.exports = {
 
             const votes = Array.isArray(ceremony.votes) ? ceremony.votes : [];
             const votesCount = votes.length;
-            const tokensUsed = ceremony.tokens.length;
+            const tokensUsed = Array.isArray(ceremony.tokens) ? ceremony.tokens.length : 0;
 
             // analyze ceremony tokens for summary (do not process egg awards here)
             const ceremonyTokens = Array.isArray(ceremony.tokens) ? ceremony.tokens : [];
