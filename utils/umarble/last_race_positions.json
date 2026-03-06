@@ -1,0 +1,2136 @@
+{
+  "result": {
+    "stages": [
+      {
+        "stage": 1,
+        "leader": "Verdant Spin",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 44.749517344458724,
+            "speed": 2.0374943261761005
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 38.555401313876146,
+            "speed": 2.033165268179129
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 77.85034226938136,
+            "speed": 3.041147188010869
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll failed a bump attempt (-3.6 m)",
+            "mag": 3.5999999999999996,
+            "type": "bumpFail"
+          },
+          {
+            "msg": "Verdant Spin shoved past Azure Bolt (force 13.6)",
+            "mag": 13.574936675831406,
+            "type": "bump"
+          },
+          {
+            "msg": "Crimson Roll used Stamina Buff (+4.0 m) (protected for 3 ticks)",
+            "mag": 4,
+            "type": "staminaBuff"
+          }
+        ]
+      },
+      {
+        "stage": 2,
+        "leader": "Verdant Spin",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 54.79030693994655,
+            "speed": 0.4011304818135218
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 49.44131509441028,
+            "speed": 0.4002782010990115
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 94.13316324843979,
+            "speed": 0.5987240411521033
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt encountered trouble (-0.9 m)",
+            "mag": 0.8683027002627037,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 3,
+        "leader": "Verdant Spin",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 97.58602173020495,
+            "speed": 4.942149478255573
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 84.48627987442629,
+            "speed": 4.015218149097718
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 118.94793981034681,
+            "speed": 5.135845356082894
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll bumped Azure Bolt (force 1.7)",
+            "mag": 1.6937955594060858,
+            "type": "bump"
+          },
+          {
+            "msg": "Verdant Spin is moving into Stage 2 — 20.9m ahead of second place!",
+            "mag": 20.865949396431773,
+            "type": "stageCross"
+          }
+        ]
+      },
+      {
+        "stage": 4,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 279.1130396536954,
+            "speed": 19.415975893759565
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 103.81900651744674,
+            "speed": 0.7904936814016722
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 145.21540112600871,
+            "speed": 1.0111164952648861
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt used Speed Burst (+11.5 m)",
+            "mag": 11.518803813030749,
+            "type": "speedBurst"
+          },
+          {
+            "msg": "Crimson Roll encountered trouble (-2.2 m)",
+            "mag": 2.1654364749531947,
+            "type": "trouble"
+          },
+          {
+            "msg": "Azure Bolt is moving into Stage 3 — 85.5m ahead of second place!",
+            "mag": 85.54027783621333,
+            "type": "stageCross"
+          }
+        ]
+      },
+      {
+        "stage": 5,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 380.53918192290274,
+            "speed": 3.822508688777743
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 118.18504650044763,
+            "speed": 8.769189608681666
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 150.6290913762789,
+            "speed": 0.19906295772435348
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt is moving into Stage 4 — 167.9m ahead of second place!",
+            "mag": 167.94662841490182,
+            "type": "stageCross"
+          },
+          {
+            "msg": "Azure Bolt encountered trouble (-2.5 m)",
+            "mag": 2.5303057640047477,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 6,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 401.09711246603325,
+            "speed": 0.7525541211903548
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 165.13678401992505,
+            "speed": 1.7264289807600575
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 210.30319078462563,
+            "speed": 6.887133046809897
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin hit Cliff Tunnel and lost 2.7 m",
+            "mag": 2.659690531259314,
+            "type": "obstacle"
+          },
+          {
+            "msg": "Azure Bolt is moving into Stage 5 — 199.0m ahead of second place!",
+            "mag": 198.95190645207413,
+            "type": "stageCross"
+          }
+        ]
+      },
+      {
+        "stage": 7,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 414.6999255986936,
+            "speed": 8.56068916738182
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 171.62291561027948,
+            "speed": 0.33988967722369723
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 247.17807632198492,
+            "speed": 1.3559002162060045
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt encountered trouble (-0.2 m)",
+            "mag": 0.2038882778295037,
+            "type": "trouble"
+          },
+          {
+            "msg": "Crimson Roll encountered trouble (-2.8 m)",
+            "mag": 2.7574637665546238,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 8,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 445.4216425351108,
+            "speed": 1.685380580574373
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 208.5668970226716,
+            "speed": 2.5788292891478974
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 254.88917165944738,
+            "speed": 0.2669420474110141
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt was slowed at Mud Pit (-12.3 m)",
+            "mag": 12.33611348572587,
+            "type": "obstacle"
+          },
+          {
+            "msg": "Azure Bolt encountered trouble (-2.8 m)",
+            "mag": 2.7775601565733146,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 9,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 454.4454577530199,
+            "speed": 0.3318082978880008
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 222.3743890823416,
+            "speed": 0.5077054801974014
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 304.47296049762406,
+            "speed": 2.7580146308367417
+          }
+        ],
+        "events": []
+      },
+      {
+        "stage": 10,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 486.0265701785809,
+            "speed": 2.8530449778472318
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 245.14910158424578,
+            "speed": 3.854027448660363
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 319.23984145247584,
+            "speed": 0.5429824876089814
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt encountered trouble (-1.0 m)",
+            "mag": 1.0049044131758702,
+            "type": "trouble"
+          },
+          {
+            "msg": "Crimson Roll encountered trouble (-2.9 m)",
+            "mag": 2.8606415143362076,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 11,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 500.6414462617118,
+            "speed": 0
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 264.89156411831243,
+            "speed": 0
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 341.23993816250396,
+            "speed": 4.664882779188844
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt is moving into Stage 6 — 164.9m ahead of second place!",
+            "mag": 164.88960548648885,
+            "type": "stageCross"
+          },
+          {
+            "msg": "Verdant Spin used Debuff — reduced others by ≈ 0.8 m/tick",
+            "mag": 0.7767358169639811,
+            "type": "debuffSpeed"
+          }
+        ]
+      },
+      {
+        "stage": 12,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 542.9923551079667,
+            "speed": 1.5572551785409554
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 298.2065949012855,
+            "speed": 1.2894436670663165
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 366.21651656728227,
+            "speed": 0.9183960184720982
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll encountered trouble (-1.8 m)",
+            "mag": 1.7525111066427852,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 13,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 551.3301650603614,
+            "speed": 0.30658368568175626
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 305.110496322497,
+            "speed": 0.25385845388459816
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 371.1337655631923,
+            "speed": 0.1808086690855856
+          }
+        ],
+        "events": []
+      },
+      {
+        "stage": 14,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 610.7791221504231,
+            "speed": 4.1517157596089325
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 353.09519566314333,
+            "speed": 2.669533061670689
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 413.6517642019705,
+            "speed": 1.9386775418726805
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt is moving into Stage 7 — 181.3m ahead of second place!",
+            "mag": 181.25473181761396,
+            "type": "stageCross"
+          },
+          {
+            "msg": "Verdant Spin hit Mud Pit and lost 10.2 m",
+            "mag": 10.206023081963714,
+            "type": "obstacle"
+          }
+        ]
+      },
+      {
+        "stage": 15,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 633.0081167667161,
+            "speed": 0.817366567164999
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 367.388331198386,
+            "speed": 0.5255627313842824
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 412.36920768702214,
+            "speed": 0.3816759862649202
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin was slowed at Mud Pit (-11.7 m)",
+            "mag": 11.662566885666696,
+            "type": "obstacle"
+          }
+        ]
+      },
+      {
+        "stage": 16,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 643.4111906234618,
+            "speed": 6.964057089297048
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 402.9217846650984,
+            "speed": 5.463304777921273
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 428.16444900468423,
+            "speed": 2.369684327831589
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt encountered trouble (-2.0 m)",
+            "mag": 1.976938609498708,
+            "type": "trouble"
+          },
+          {
+            "msg": "Verdant Spin was slowed at Mud Pit (-11.5 m)",
+            "mag": 11.510741204844303,
+            "type": "obstacle"
+          }
+        ]
+      },
+      {
+        "stage": 17,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 680.6979406104412,
+            "speed": 1.3710445912501428
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 454.55784959739134,
+            "speed": 2.7035825739835375
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 439.5173621002721,
+            "speed": 0.46653019051738964
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll surged with Resolve (+10.8 m)",
+            "mag": 10.759794749988098,
+            "type": "resolve"
+          },
+          {
+            "msg": "Crimson Roll hit Mud Pit and lost 15.4 m",
+            "mag": 15.444932440502633,
+            "type": "obstacle"
+          },
+          {
+            "msg": "Crimson Roll failed a bump attempt (-3.5 m)",
+            "mag": 3.457367348006498,
+            "type": "bumpFail"
+          }
+        ]
+      },
+      {
+        "stage": 18,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 688.0387473039291,
+            "speed": 0.2699235872269413
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 552.2887956461966,
+            "speed": 17.623451962014997
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 470.1198090525541,
+            "speed": 4.69570253640137
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll made a comeback (+10.1 m)",
+            "mag": 10.121736299251042,
+            "type": "resolve"
+          },
+          {
+            "msg": "Crimson Roll surged with Resolve (+10.3 m)",
+            "mag": 10.29850993499642,
+            "type": "resolve"
+          }
+        ]
+      },
+      {
+        "stage": 19,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 757.8389814996373,
+            "speed": 3.5493441746357957
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 646.6477646766361,
+            "speed": 3.4696066074490415
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 495.2614016964617,
+            "speed": 0.9244636398152402
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt hit Speed Ramp and lost 6.1 m",
+            "mag": 6.126042438693506,
+            "type": "obstacle"
+          },
+          {
+            "msg": "Azure Bolt is moving into Stage 8 — 110.1m ahead of second place!",
+            "mag": 110.06459170324479,
+            "type": "stageCross"
+          }
+        ]
+      },
+      {
+        "stage": 20,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 776.842775862665,
+            "speed": 0.698775020181636
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 665.2246304987085,
+            "speed": 0.6830767341381655
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 537.0410799690761,
+            "speed": 6.949424455915629
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin surged with Resolve (+6.1 m)",
+            "mag": 6.119828089309472,
+            "type": "resolve"
+          },
+          {
+            "msg": "Verdant Spin surged with Resolve (+6.2 m)",
+            "mag": 6.17208446768306,
+            "type": "resolve"
+          }
+        ]
+      },
+      {
+        "stage": 21,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 797.218716863836,
+            "speed": 6.634048900133742
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 687.0922943798296,
+            "speed": 7.24636201028519
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 626.5654331799267,
+            "speed": 8.690119814276132
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin surged with Resolve (+7.6 m)",
+            "mag": 7.618537490614505,
+            "type": "resolve"
+          },
+          {
+            "msg": "Verdant Spin made a comeback (+7.6 m)",
+            "mag": 7.550810849373582,
+            "type": "resolve"
+          }
+        ]
+      },
+      {
+        "stage": 22,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 831.4089667354375,
+            "speed": 1.3060744255810566
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 763.2594885157998,
+            "speed": 6.587570354116863
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 673.0938175278668,
+            "speed": 1.7108621620851245
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt is moving into Stage 9 — 109.5m ahead of second place!",
+            "mag": 109.51410937385492,
+            "type": "stageCross"
+          },
+          {
+            "msg": "Crimson Roll rallied and gained +9.9 m from Resolve",
+            "mag": 9.886753558419512,
+            "type": "resolve"
+          }
+        ]
+      },
+      {
+        "stage": 23,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 838.4019120755718,
+            "speed": 0.257132624560922
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 796.8876827032577,
+            "speed": 1.2969239895193607
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 680.8487952556995,
+            "speed": 0.3368249690695897
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin encountered trouble (-1.4 m)",
+            "mag": 1.4052702256042462,
+            "type": "trouble"
+          },
+          {
+            "msg": "Crimson Roll encountered trouble (-1.6 m)",
+            "mag": 1.6427815765253657,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 24,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 901.9613692809348,
+            "speed": 3.54422752820814
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 803.8316350473082,
+            "speed": 0.25533113791181766
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 717.9035908969213,
+            "speed": 2.8549165408321495
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin was slowed at Speed Ramp (-5.1 m)",
+            "mag": 5.092138880967122,
+            "type": "obstacle"
+          },
+          {
+            "msg": "Azure Bolt is moving into Stage 10 — 98.1m ahead of second place!",
+            "mag": 98.12973423362666,
+            "type": "stageCross"
+          }
+        ]
+      },
+      {
+        "stage": 25,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 920.937768245896,
+            "speed": 0.6977676834639692
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 894.0851695390056,
+            "speed": 6.402720669555171
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 733.1893012130101,
+            "speed": 0.5620599934188059
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll rallied and gained +9.4 m from Resolve",
+            "mag": 9.443643085009278,
+            "type": "resolve"
+          }
+        ]
+      },
+      {
+        "stage": 26,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 938.877012134988,
+            "speed": 5.771687298150112
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 931.3178324581248,
+            "speed": 1.9651113808065832
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 751.568881428417,
+            "speed": 4.0364899204488625
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll bumped Azure Bolt (force 3.3)",
+            "mag": 3.277971854626509,
+            "type": "bump"
+          },
+          {
+            "msg": "Verdant Spin encountered trouble (-1.1 m)",
+            "mag": 1.074661348915753,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 27,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 967.4860223939496,
+            "speed": 1.1362974988642176
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 941.1951972114226,
+            "speed": 0.38688013255947085
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 773.1809372399711,
+            "speed": 0.7946815487157004
+          }
+        ],
+        "events": [
+          {
+            "msg": "Crimson Roll encountered trouble (-0.6 m)",
+            "mag": 0.6441769016828767,
+            "type": "trouble"
+          },
+          {
+            "msg": "Azure Bolt encountered trouble (-2.3 m)",
+            "mag": 2.293588402944429,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 28,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 973.1596432802143,
+            "speed": 0.2237078932427458
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 968.5894352128897,
+            "speed": 3.1058203580321297
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 789.5577627537931,
+            "speed": 5.160848416330111
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin encountered trouble (-0.7 m)",
+            "mag": 0.6920593575480316,
+            "type": "trouble"
+          },
+          {
+            "msg": "Verdant Spin rallied and gained +6.9 m from Resolve",
+            "mag": 6.926499598319925,
+            "type": "resolve"
+          }
+        ]
+      },
+      {
+        "stage": 29,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 1000,
+            "speed": 6.569576588633082
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 985.2185273799248,
+            "speed": 0.6114565329768653
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 847.1368347948668,
+            "speed": 2.6985482204344917
+          }
+        ],
+        "events": [
+          {
+            "msg": "Azure Bolt finished (t=284)",
+            "mag": 9999,
+            "type": "finish"
+          },
+          {
+            "msg": "Azure Bolt is moving into Stage 10 — 21.5m ahead of second place!",
+            "mag": 21.51347998869619,
+            "type": "stageCross"
+          }
+        ]
+      },
+      {
+        "stage": 30,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 1000,
+            "speed": 3.6960856395659207
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 1000,
+            "speed": 6.625477045359913
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 884.660077589279,
+            "speed": 3.2652659147589755
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin rallied and gained +6.2 m from Resolve",
+            "mag": 6.161726633093261,
+            "type": "resolve"
+          },
+          {
+            "msg": "Crimson Roll bumped Azure Bolt (force 2.9)",
+            "mag": 2.8734909490671616,
+            "type": "bump"
+          },
+          {
+            "msg": "Crimson Roll finished (t=299)",
+            "mag": 9999,
+            "type": "finish"
+          }
+        ]
+      },
+      {
+        "stage": 31,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 1000,
+            "speed": 3.6960856395659207
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 1000,
+            "speed": 6.625477045359913
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 919.2034083481692,
+            "speed": 4.8209873218628685
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin rallied and gained +6.8 m from Resolve",
+            "mag": 6.80340328089661,
+            "type": "resolve"
+          },
+          {
+            "msg": "Verdant Spin encountered trouble (-0.4 m)",
+            "mag": 0.4412150663946286,
+            "type": "trouble"
+          }
+        ]
+      },
+      {
+        "stage": 32,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 1000,
+            "speed": 3.6960856395659207
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 1000,
+            "speed": 6.625477045359913
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 971.2343137270027,
+            "speed": 3.3305113189503874
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin made a comeback (+6.3 m)",
+            "mag": 6.314159803912542,
+            "type": "resolve"
+          }
+        ]
+      },
+      {
+        "stage": 33,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 1000,
+            "speed": 3.6960856395659207
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 1000,
+            "speed": 6.625477045359913
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 989.0664396395493,
+            "speed": 0.6556924320683921
+          }
+        ],
+        "events": []
+      },
+      {
+        "stage": 34,
+        "leader": "Azure Bolt",
+        "positions": [
+          {
+            "name": "Azure Bolt",
+            "pos": 1000,
+            "speed": 3.6960856395659207
+          },
+          {
+            "name": "Crimson Roll",
+            "pos": 1000,
+            "speed": 6.625477045359913
+          },
+          {
+            "name": "Verdant Spin",
+            "pos": 1000,
+            "speed": 5.271143070878403
+          }
+        ],
+        "events": [
+          {
+            "msg": "Verdant Spin finished (t=340)",
+            "mag": 9999,
+            "type": "finish"
+          }
+        ]
+      }
+    ],
+    "final": [
+      {
+        "name": "Azure Bolt",
+        "total": 1000,
+        "finishedAt": 284,
+        "finishedStage": 29
+      },
+      {
+        "name": "Crimson Roll",
+        "total": 1000,
+        "finishedAt": 299,
+        "finishedStage": 30
+      },
+      {
+        "name": "Verdant Spin",
+        "total": 1000,
+        "finishedAt": 340,
+        "finishedStage": 34
+      }
+    ],
+    "positionsHistory": {
+      "Azure Bolt": [
+        10.886,
+        10.886,
+        18.363,
+        24.719,
+        30.121,
+        34.603,
+        38.506,
+        41.824,
+        42.352,
+        44.75,
+        46.787,
+        48.519,
+        49.991,
+        51.242,
+        51.438,
+        52.342,
+        53.11,
+        53.763,
+        54.318,
+        54.79,
+        55.191,
+        55.532,
+        55.822,
+        56.069,
+        56.278,
+        67.416,
+        76.884,
+        84.931,
+        91.772,
+        97.586,
+        102.528,
+        106.729,
+        110.3,
+        113.335,
+        115.915,
+        160.028,
+        197.525,
+        229.397,
+        256.271,
+        279.113,
+        298.529,
+        315.033,
+        329.061,
+        340.984,
+        348.589,
+        357.204,
+        364.527,
+        370.751,
+        376.042,
+        380.539,
+        384.362,
+        387.611,
+        390.373,
+        392.72,
+        394.715,
+        396.412,
+        397.853,
+        399.079,
+        400.12,
+        401.097,
+        401.85,
+        402.489,
+        403.033,
+        403.495,
+        403.684,
+        404.018,
+        404.302,
+        404.423,
+        404.629,
+        414.7,
+        410.925,
+        418.201,
+        421.609,
+        426.866,
+        431.335,
+        435.133,
+        438.362,
+        441.106,
+        443.439,
+        445.422,
+        447.107,
+        448.54,
+        449.757,
+        450.792,
+        451.672,
+        452.42,
+        453.056,
+        453.596,
+        454.055,
+        454.445,
+        454.777,
+        455.059,
+        455.299,
+        455.503,
+        462.063,
+        468.493,
+        473.958,
+        478.604,
+        482.67,
+        486.027,
+        488.88,
+        491.305,
+        493.366,
+        495.118,
+        496.607,
+        497.873,
+        498.949,
+        499.864,
+        500.641,
+        500.641,
+        508.551,
+        515.275,
+        520.99,
+        525.847,
+        529.976,
+        533.486,
+        536.469,
+        539.005,
+        541.16,
+        542.992,
+        544.55,
+        545.873,
+        546.998,
+        547.955,
+        548.768,
+        549.459,
+        550.046,
+        550.545,
+        550.969,
+        551.33,
+        551.637,
+        551.897,
+        552.119,
+        565.07,
+        576.078,
+        585.435,
+        593.388,
+        600.148,
+        605.895,
+        610.779,
+        614.931,
+        618.46,
+        621.459,
+        624.009,
+        626.176,
+        628.018,
+        629.584,
+        630.915,
+        632.047,
+        633.008,
+        633.825,
+        634.52,
+        635.111,
+        635.613,
+        634.062,
+        634.425,
+        634.733,
+        634.995,
+        635.218,
+        643.411,
+        650.375,
+        656.295,
+        661.326,
+        665.603,
+        669.238,
+        672.328,
+        674.955,
+        677.187,
+        679.085,
+        680.698,
+        682.069,
+        683.234,
+        684.225,
+        685.067,
+        685.783,
+        686.391,
+        686.908,
+        687.348,
+        687.721,
+        688.039,
+        688.309,
+        688.538,
+        707.69,
+        718.761,
+        728.172,
+        736.172,
+        742.971,
+        748.751,
+        753.663,
+        757.839,
+        761.388,
+        764.405,
+        766.97,
+        769.149,
+        771.002,
+        772.577,
+        773.916,
+        775.054,
+        776.021,
+        776.843,
+        777.542,
+        778.136,
+        778.64,
+        779.07,
+        779.434,
+        779.744,
+        780.008,
+        780.232,
+        789.414,
+        797.219,
+        803.853,
+        809.492,
+        814.285,
+        818.359,
+        821.822,
+        824.766,
+        825.938,
+        828.065,
+        829.872,
+        831.409,
+        832.715,
+        833.825,
+        834.769,
+        835.571,
+        836.253,
+        836.832,
+        837.325,
+        837.744,
+        838.099,
+        838.402,
+        838.659,
+        838.878,
+        851.884,
+        862.94,
+        872.338,
+        880.325,
+        887.115,
+        892.886,
+        897.792,
+        901.961,
+        905.506,
+        908.518,
+        911.079,
+        913.255,
+        915.106,
+        916.678,
+        918.015,
+        919.151,
+        920.117,
+        920.938,
+        921.636,
+        922.229,
+        922.733,
+        923.161,
+        923.526,
+        923.835,
+        924.098,
+        924.098,
+        932.087,
+        938.877,
+        944.649,
+        949.555,
+        953.725,
+        957.269,
+        960.282,
+        960.549,
+        962.726,
+        964.576,
+        966.149,
+        967.486,
+        968.622,
+        969.588,
+        970.409,
+        971.107,
+        971.7,
+        972.204,
+        972.633,
+        972.587,
+        972.896,
+        973.16,
+        973.383,
+        984.081,
+        993.174,
+        1000,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "Crimson Roll": [
+        3.831,
+        7.073,
+        9.828,
+        16.171,
+        21.562,
+        26.144,
+        30.039,
+        33.349,
+        36.163,
+        38.555,
+        40.589,
+        42.317,
+        43.786,
+        45.034,
+        46.096,
+        46.998,
+        47.765,
+        48.416,
+        48.97,
+        49.441,
+        49.842,
+        50.182,
+        50.471,
+        50.717,
+        50.926,
+        59.975,
+        67.667,
+        74.205,
+        79.762,
+        84.486,
+        88.501,
+        91.914,
+        94.815,
+        97.281,
+        99.377,
+        98.993,
+        100.508,
+        101.795,
+        102.889,
+        103.819,
+        104.61,
+        105.281,
+        105.853,
+        106.338,
+        106.751,
+        107.101,
+        107.4,
+        107.653,
+        107.868,
+        118.185,
+        126.954,
+        134.408,
+        140.744,
+        146.129,
+        150.707,
+        154.598,
+        157.905,
+        160.716,
+        163.106,
+        165.137,
+        166.863,
+        168.331,
+        169.578,
+        170.638,
+        171.539,
+        169.548,
+        170.199,
+        170.753,
+        171.223,
+        171.623,
+        171.963,
+        172.252,
+        172.497,
+        172.706,
+        181.887,
+        189.692,
+        196.325,
+        201.964,
+        205.533,
+        208.567,
+        211.146,
+        213.338,
+        215.201,
+        216.785,
+        218.131,
+        219.275,
+        220.248,
+        221.074,
+        221.777,
+        222.374,
+        222.882,
+        223.314,
+        223.68,
+        223.992,
+        224.257,
+        224.483,
+        231.866,
+        238.141,
+        240.615,
+        245.149,
+        249.003,
+        252.279,
+        255.064,
+        257.43,
+        259.442,
+        261.152,
+        262.606,
+        263.841,
+        264.892,
+        264.892,
+        271.441,
+        277.008,
+        281.74,
+        284.01,
+        287.429,
+        290.335,
+        292.805,
+        294.905,
+        296.69,
+        298.207,
+        299.496,
+        300.592,
+        301.524,
+        302.316,
+        302.989,
+        303.561,
+        304.047,
+        304.46,
+        304.812,
+        305.11,
+        305.364,
+        305.58,
+        315.377,
+        323.704,
+        330.782,
+        336.799,
+        341.913,
+        346.26,
+        349.955,
+        353.095,
+        355.765,
+        358.034,
+        359.963,
+        361.602,
+        362.996,
+        364.18,
+        365.187,
+        366.043,
+        366.77,
+        367.388,
+        367.914,
+        368.361,
+        368.74,
+        369.063,
+        369.337,
+        369.571,
+        380.037,
+        388.933,
+        396.494,
+        402.922,
+        408.385,
+        413.029,
+        412.291,
+        424.792,
+        431.96,
+        438.054,
+        443.233,
+        447.635,
+        451.377,
+        454.558,
+        457.261,
+        468.719,
+        478.457,
+        486.735,
+        493.772,
+        499.752,
+        504.836,
+        519.279,
+        531.555,
+        552.289,
+        569.912,
+        584.892,
+        597.625,
+        608.448,
+        617.648,
+        625.467,
+        632.114,
+        637.764,
+        642.566,
+        646.648,
+        650.117,
+        653.067,
+        655.573,
+        657.704,
+        659.515,
+        661.055,
+        662.363,
+        663.476,
+        664.421,
+        665.225,
+        665.908,
+        666.488,
+        666.982,
+        667.401,
+        667.758,
+        668.061,
+        668.319,
+        668.538,
+        678.567,
+        687.092,
+        694.339,
+        706.362,
+        711.597,
+        716.047,
+        719.83,
+        723.045,
+        735.665,
+        746.392,
+        755.509,
+        763.259,
+        769.847,
+        775.446,
+        780.206,
+        784.252,
+        787.69,
+        790.613,
+        793.098,
+        795.21,
+        797.005,
+        796.888,
+        798.185,
+        799.287,
+        800.224,
+        801.02,
+        801.697,
+        802.273,
+        802.762,
+        803.178,
+        803.531,
+        803.832,
+        804.087,
+        804.304,
+        814.73,
+        823.593,
+        840.569,
+        854.999,
+        867.265,
+        877.691,
+        886.553,
+        894.085,
+        900.488,
+        905.93,
+        910.556,
+        914.488,
+        917.83,
+        920.671,
+        923.086,
+        926.286,
+        929.006,
+        931.318,
+        932.639,
+        934.309,
+        935.729,
+        936.936,
+        937.962,
+        938.833,
+        939.575,
+        940.205,
+        940.74,
+        941.195,
+        941.582,
+        941.911,
+        942.19,
+        942.428,
+        942.63,
+        949.63,
+        955.58,
+        960.637,
+        964.936,
+        968.589,
+        971.695,
+        974.335,
+        976.579,
+        978.487,
+        980.108,
+        981.486,
+        982.657,
+        983.653,
+        984.499,
+        985.219,
+        985.83,
+        986.35,
+        986.791,
+        987.167,
+        985.161,
+        985.432,
+        985.663,
+        993.65,
+        1000,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "Verdant Spin": [
+        9.885,
+        23.015,
+        34.176,
+        43.662,
+        51.726,
+        58.58,
+        65.383,
+        70.063,
+        74.273,
+        77.85,
+        80.891,
+        83.476,
+        85.674,
+        87.541,
+        89.129,
+        90.478,
+        91.625,
+        92.6,
+        93.429,
+        94.133,
+        94.732,
+        95.241,
+        95.673,
+        96.041,
+        96.354,
+        96.619,
+        96.845,
+        105.797,
+        112.906,
+        118.948,
+        124.084,
+        128.449,
+        132.16,
+        135.314,
+        137.995,
+        140.274,
+        142.211,
+        143.857,
+        144.026,
+        145.215,
+        146.227,
+        147.086,
+        147.816,
+        148.437,
+        148.965,
+        149.414,
+        149.795,
+        150.119,
+        150.395,
+        150.629,
+        160.495,
+        168.881,
+        176.009,
+        182.068,
+        187.219,
+        191.596,
+        195.317,
+        198.48,
+        201.168,
+        210.303,
+        217.19,
+        223.044,
+        228.02,
+        232.25,
+        235.845,
+        238.901,
+        241.498,
+        243.706,
+        245.583,
+        247.178,
+        248.534,
+        249.686,
+        250.666,
+        251.499,
+        252.207,
+        252.808,
+        253.32,
+        253.754,
+        254.575,
+        254.889,
+        255.156,
+        255.383,
+        265.505,
+        274.108,
+        281.421,
+        287.636,
+        292.92,
+        297.411,
+        301.228,
+        304.473,
+        307.231,
+        309.575,
+        311.568,
+        313.262,
+        314.701,
+        315.925,
+        316.965,
+        317.85,
+        318.601,
+        319.24,
+        319.783,
+        320.244,
+        320.637,
+        320.97,
+        321.254,
+        321.494,
+        321.699,
+        329.295,
+        335.752,
+        341.24,
+        345.905,
+        349.87,
+        353.24,
+        356.105,
+        358.54,
+        360.61,
+        362.369,
+        363.865,
+        365.136,
+        366.217,
+        367.135,
+        367.916,
+        368.579,
+        369.143,
+        369.623,
+        370.03,
+        370.376,
+        370.671,
+        370.921,
+        371.134,
+        380.981,
+        389.351,
+        396.466,
+        402.513,
+        407.654,
+        412.023,
+        415.737,
+        418.894,
+        411.371,
+        413.652,
+        415.59,
+        417.238,
+        418.639,
+        419.83,
+        409.179,
+        410.039,
+        410.77,
+        411.392,
+        411.92,
+        412.369,
+        412.751,
+        413.075,
+        413.351,
+        413.585,
+        419.869,
+        413.699,
+        418.238,
+        422.097,
+        425.377,
+        428.164,
+        430.534,
+        432.548,
+        434.26,
+        435.716,
+        436.953,
+        438.004,
+        438.898,
+        439.368,
+        438.969,
+        439.517,
+        439.984,
+        440.38,
+        440.718,
+        441.004,
+        441.248,
+        441.455,
+        450.45,
+        458.096,
+        464.595,
+        470.12,
+        474.816,
+        478.807,
+        482.2,
+        485.083,
+        487.534,
+        489.618,
+        491.389,
+        492.894,
+        494.174,
+        495.261,
+        496.186,
+        496.972,
+        497.64,
+        498.207,
+        504.81,
+        510.422,
+        515.192,
+        519.247,
+        528.865,
+        537.041,
+        543.991,
+        549.898,
+        554.918,
+        559.186,
+        562.814,
+        573.516,
+        590.164,
+        604.314,
+        616.342,
+        626.565,
+        635.256,
+        642.642,
+        648.921,
+        654.258,
+        658.794,
+        662.65,
+        665.927,
+        668.713,
+        671.081,
+        673.094,
+        674.805,
+        674.854,
+        676.09,
+        677.14,
+        678.034,
+        678.793,
+        679.438,
+        679.986,
+        680.453,
+        680.849,
+        681.186,
+        681.472,
+        681.715,
+        681.922,
+        689.492,
+        695.926,
+        706.487,
+        710.593,
+        714.545,
+        717.904,
+        720.759,
+        723.185,
+        725.248,
+        727.001,
+        728.491,
+        729.758,
+        730.835,
+        731.75,
+        732.528,
+        733.189,
+        733.751,
+        734.229,
+        734.635,
+        734.98,
+        735.274,
+        735.523,
+        735.735,
+        742.308,
+        746.82,
+        751.569,
+        755.605,
+        759.036,
+        761.953,
+        764.432,
+        766.539,
+        768.33,
+        769.852,
+        771.146,
+        772.246,
+        773.181,
+        773.284,
+        773.959,
+        774.533,
+        775.021,
+        775.436,
+        775.789,
+        776.088,
+        776.343,
+        783.486,
+        789.558,
+        794.719,
+        799.105,
+        809.009,
+        817.426,
+        824.582,
+        830.663,
+        835.833,
+        840.227,
+        843.962,
+        847.137,
+        850.059,
+        852.352,
+        854.302,
+        855.959,
+        857.368,
+        864.727,
+        870.982,
+        876.299,
+        880.819,
+        884.66,
+        887.925,
+        890.701,
+        893.06,
+        895.065,
+        896.77,
+        898.219,
+        899.45,
+        907.3,
+        913.532,
+        919.203,
+        924.024,
+        928.122,
+        931.605,
+        934.566,
+        943.397,
+        950.903,
+        957.283,
+        962.706,
+        967.316,
+        971.234,
+        974.565,
+        977.396,
+        979.802,
+        981.847,
+        983.586,
+        985.064,
+        986.32,
+        987.388,
+        988.295,
+        989.066,
+        989.722,
+        990.279,
+        990.753,
+        991.156,
+        991.498,
+        991.789,
+        992.036,
+        992.247,
+        999.542,
+        1000
+      ]
+    }
+  },
+  "weather": "sunny",
+  "avgDistance": 1000,
+  "generatedAt": "2026-03-02T03:54:48.433Z"
+}
