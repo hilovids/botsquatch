@@ -29,7 +29,8 @@ function pickChunkSize(remaining) {
 function weightedDelayMs(chunkSize) {
   const base = randomInt(10000, 25000);
   const adjustment = (chunkSize - 4) * 1500;
-  return Math.max(15000, Math.min(30000, base + adjustment));
+  return Math.max(10000, Math.min(25000, base + adjustment));
+  // return 1000;
 }
 
 function toRelativeTimestamp(msFromNow) {
