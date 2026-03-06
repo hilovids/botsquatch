@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+const axios = require('axios');
 
 // Flexible plot renderer. Parameters:
 // - result: { positionsHistory, final, ... }
@@ -107,7 +107,6 @@ async function renderRacePlot(result, options = {}) {
     }
   };
 
-  const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColour: 'white' });
   const configuration = {
     type: 'line',
     data: { labels, datasets },
@@ -125,7 +124,49 @@ async function renderRacePlot(result, options = {}) {
     plugins: [captionPlugin]
   };
 
-  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+  let buffer;
+  try {
+    // Lazy-load so module-level require failures do not crash bot startup.
+    const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+    const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColour: 'white' });
+    buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+  } catch (nativeErr) {
+    // Fallback: remote chart rendering without native canvas.
+    const quickChartConfig = {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: false,
+        plugins: {
+          title: { display: true, text: 'Umarble Race: Distance vs Time' },
+          legend: { position: 'bottom' }
+        },
+        scales: {
+          x: { title: { display: true, text: 'Ticks (approx seconds)' } },
+          y: { title: { display: true, text: 'Distance (m)' }, beginAtZero: true, suggestedMax: 1000 }
+        }
+      }
+    };
+
+    try {
+      const response = await axios.post('https://quickchart.io/chart', {
+        width,
+        height,
+        backgroundColor: 'white',
+        format: 'png',
+        version: '4',
+        chart: quickChartConfig
+      }, {
+        responseType: 'arraybuffer',
+        timeout: 15000
+      });
+      buffer = Buffer.from(response.data);
+    } catch (fallbackErr) {
+      const nativeMsg = nativeErr && nativeErr.message ? nativeErr.message : String(nativeErr);
+      const fallbackMsg = fallbackErr && fallbackErr.message ? fallbackErr.message : String(fallbackErr);
+      throw new Error(`Native chart renderer unavailable (${nativeMsg}); fallback renderer failed (${fallbackMsg})`);
+    }
+  }
 
   if (writeToDisk && outFile) {
     fs.writeFileSync(outFile, buffer);
