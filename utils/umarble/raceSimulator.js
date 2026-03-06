@@ -1,6 +1,6 @@
 // Standalone race simulator utilities
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-const STAT_MAX = 12;
+const STAT_MAX = 10;
 
 const DEFAULT_WEATHERS = ['sunny', 'rainy', 'snowy'];
 const WEATHER_MODIFIERS = {
