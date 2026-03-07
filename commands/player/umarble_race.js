@@ -194,14 +194,13 @@ function weightedDelayMs(chunkSize) {
 async function runRaceInThread(thread, raceResult) {
   const { stages, final, weather, racers } = raceResult;
 
-  // Opening animation
+  // Opening animation: icon only, no GIF
   try {
     await thread.send({
       embeds: [applyStyle(new EmbedBuilder()
         .setTitle('🏁 Umarble Race — The Gates Open!')
-        .setDescription('And they\'re off!')
-        .setImage('attachment://umarble_gif.gif'), UMARBLE_EMBED_COLOR)],
-      files: [iconFile(), gifFile()],
+        .setDescription('And they\'re off!'), UMARBLE_EMBED_COLOR)],
+      files: [iconFile()],
     });
   } catch {
     await thread.send({
@@ -219,9 +218,8 @@ async function runRaceInThread(thread, raceResult) {
     await thread.send({
       embeds: [applyStyle(new EmbedBuilder()
         .setTitle(`Umarble Race — Stage ${stage.stage}`)
-        .setDescription(`The Umarbles head into Stage ${stage.stage}!`)
-        .setImage('attachment://umarble_gif.gif'))],
-      files: [iconFile(), gifFile()],
+        .setDescription(`The Umarbles head into Stage ${stage.stage}!`))],
+      files: [iconFile()],
     });
 
     const events = Array.isArray(stage.events) ? stage.events : [];
@@ -291,7 +289,7 @@ async function runRaceInThread(thread, raceResult) {
   const finalEmbed = buildFinalResultsEmbed(final);
   if (plotAttachment) {
     finalEmbed.setImage('attachment://race_plot.png');
-    await thread.send({ embeds: [finalEmbed], files: [iconFile(), plotAttachment] });
+    await thread.send({ embeds: [finalEmbed], files: [plotAttachment, iconFile()] });
   } else {
     await thread.send({ embeds: [finalEmbed], files: [iconFile()] });
   }
