@@ -82,13 +82,13 @@ module.exports = {
             // find active ceremony if applicable
             const ceremony = await ceremoniesCol.findOne({ guildId, active: true });
 
-            // helper to send anonymous token-used embed to campground
+            // helper to send anonymous token-used embed to vote channel
             async function sendAnonymousEmbed(color = 0xFEB316) {
                 const Embed = new EmbedBuilder().setTitle('A token has been used!').setColor(color);
-                const campId = discordConfig && discordConfig.campground_id;
-                if (campId) {
+                const voteChannelId = discordConfig && discordConfig.vote_channel_id;
+                if (voteChannelId) {
                     try {
-                        const chan = await interaction.client.channels.fetch(campId);
+                        const chan = await interaction.client.channels.fetch(voteChannelId);
                         if (chan) await chan.send({ embeds: [Embed] });
                     } catch (e) { console.error('sendAnonymousEmbed error', e); }
                 }
