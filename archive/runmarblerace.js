@@ -1,8 +1,8 @@
 // Admin command to run a full marble race and post interval updates
 const path = require('path');
 const { SlashCommandBuilder } = require('discord.js');
-const { runMarbleRace } = require('../../utils/umarble/marbleRaceSim');
-const { renderRacePlot } = require('../../utils/umarble/plotRace');
+const { runMarbleRace } = require('../utils/umarble/marbleRaceSim');
+const { renderRacePlot } = require('../utils/umarble/plotRace');
 // getLatestRaceData now in mongodbUtil.js
 const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 

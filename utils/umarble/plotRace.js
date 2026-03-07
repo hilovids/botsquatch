@@ -131,19 +131,49 @@ async function renderRacePlot(result, options = {}) {
     const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColour: 'white' });
     buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
   } catch (nativeErr) {
-    // Fallback: remote chart rendering without native canvas.
+    // Fallback: remote chart rendering via QuickChart (no native deps required).
+    // Downsample position history to at most MAX_POINTS per racer to stay well within
+    // QuickChart's request-size limits (large datasets cause 400 responses).
+    const MAX_POINTS = 120;
+    const step = ticks > MAX_POINTS ? Math.ceil(ticks / MAX_POINTS) : 1;
+    const sampledLabels = labels.filter((_, i) => i % step === 0 || i === ticks - 1);
+
+    // Derive y-axis max from final positions so the chart scales correctly.
+    const maxPos = (result.final || []).reduce((m, r) => Math.max(m, r.total || 0), 0);
+    const yMax = Math.max(maxPos * 1.05, 500);
+
+    const sampledDatasets = racerNames.map(name => {
+      const raw = positionsHistory[name];
+      const color = colorMap[name] || '#888888';
+      // Replace null (post-finish) with the last real value so lines don't drop off.
+      let lastVal = 0;
+      const filled = raw.map(v => { if (v !== null && v !== undefined) { lastVal = v; return v; } return lastVal; });
+      const sampled = filled.filter((_, i) => i % step === 0 || i === filled.length - 1);
+      return {
+        label: name,
+        data: sampled,
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
+        tension: 0.15,
+        pointRadius: 0,
+        borderWidth: 2
+      };
+    });
+
     const quickChartConfig = {
       type: 'line',
-      data: { labels, datasets },
+      data: { labels: sampledLabels, datasets: sampledDatasets },
       options: {
         responsive: false,
+        spanGaps: true,
         plugins: {
-          title: { display: true, text: 'Umarble Race: Distance vs Time' },
+          title: { display: true, text: `Umarble Race — ${weather.charAt(0).toUpperCase() + weather.slice(1)} | ${(result.final || []).map((r, i) => `${i + 1}. ${r.name}`).slice(0, 3).join(', ')}` },
           legend: { position: 'bottom' }
         },
         scales: {
-          x: { title: { display: true, text: 'Ticks (approx seconds)' } },
-          y: { title: { display: true, text: 'Distance (m)' }, beginAtZero: true, suggestedMax: 1000 }
+          x: { title: { display: true, text: 'Ticks' } },
+          y: { title: { display: true, text: 'Distance (m)' }, beginAtZero: true, suggestedMax: yMax }
         }
       }
     };
@@ -154,11 +184,11 @@ async function renderRacePlot(result, options = {}) {
         height,
         backgroundColor: 'white',
         format: 'png',
-        version: '4',
-        chart: quickChartConfig
+        version: '3',
+        chart: JSON.stringify(quickChartConfig)
       }, {
         responseType: 'arraybuffer',
-        timeout: 15000
+        timeout: 20000
       });
       buffer = Buffer.from(response.data);
     } catch (fallbackErr) {

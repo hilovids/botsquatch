@@ -1,4 +1,4 @@
-const { Events, ActionRowBuilder, ButtonBuilder, StringSelectMenuBuilder, EmbedBuilder } = require('discord.js');
+const { Events, ActionRowBuilder, ButtonBuilder, StringSelectMenuBuilder, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { connectToMongo } = require('../utils/mongodbUtil');
 const busyManager = require('../utils/busyManager');
 const { ObjectId } = require('mongodb');
@@ -202,6 +202,48 @@ module.exports = {
 					} catch (err) {
 						console.error('vote button error', err);
 						try { await interaction.editReply({ content: 'There was an error recording your vote.', ephemeral: true }); } catch (e) { }
+					}
+					return;
+				}
+
+				// Umarble race bet button: show a modal to collect the stars amount
+				if (cid.startsWith('umarble_bet:')) {
+					try {
+						const parts = cid.split(':');
+						const raceId    = parts[1];
+						const horseIdx  = parseInt(parts[2], 10);
+
+						// Verify the race is still in betting status before showing modal
+						const db = await connectToMongo('hilovidsSiteData');
+						const playerRacesCol = db.collection('umarble_player_races');
+						let race = null;
+						try { race = await playerRacesCol.findOne({ _id: new ObjectId(raceId) }); } catch (_) {}
+						if (!race || race.status !== 'betting') {
+							await interaction.reply({ content: 'Betting is closed for this race.', ephemeral: true });
+							return;
+						}
+						const horse = race.horses[horseIdx];
+						if (!horse) {
+							await interaction.reply({ content: 'Invalid horse selection.', ephemeral: true });
+							return;
+						}
+
+						const modal = new ModalBuilder()
+							.setCustomId(`umarble_bet_modal:${raceId}:${horseIdx}`)
+							.setTitle(`Bet on ${horse.name}`);
+						const amountInput = new TextInputBuilder()
+							.setCustomId('umarble_amount')
+							.setLabel(`Stars to bet on ${horse.name} (odds: ${(race.odds[horseIdx] || 1).toFixed(2)}x)`)
+							.setStyle(TextInputStyle.Short)
+							.setRequired(true)
+							.setMinLength(1)
+							.setMaxLength(6)
+							.setPlaceholder('e.g. 5');
+						modal.addComponents(new ActionRowBuilder().addComponents(amountInput));
+						await interaction.showModal(modal);
+					} catch (err) {
+						console.error('umarble bet button error', err);
+						try { if (!interaction.replied) await interaction.reply({ content: 'Error opening bet form.', ephemeral: true }); } catch (_) {}
 					}
 					return;
 				}
@@ -529,6 +571,92 @@ module.exports = {
 				} catch (err) {
 					console.error('egg modal submit error', err);
 					try { await interaction.editReply({ content: 'There was an error processing your egg token.', ephemeral: true }); } catch (e) {}
+				}
+				return;
+			}
+
+			// Umarble race bet modal submit
+			if (interaction.customId && interaction.customId.startsWith('umarble_bet_modal:')) {
+				await interaction.deferReply({ ephemeral: true });
+				try {
+					const parts     = interaction.customId.split(':');
+					const raceId    = parts[1];
+					const horseIdx  = parseInt(parts[2], 10);
+					const amountStr = interaction.fields.getTextInputValue('umarble_amount');
+					const amount    = parseInt(amountStr, 10);
+
+					if (!Number.isInteger(amount) || amount <= 0) {
+						await interaction.editReply({ content: 'Invalid amount. Please enter a positive whole number.', ephemeral: true });
+						return;
+					}
+
+					const db = await connectToMongo('hilovidsSiteData');
+					const campersCol     = db.collection('campers');
+					const playerRacesCol = db.collection('umarble_player_races');
+
+					let race = null;
+					try { race = await playerRacesCol.findOne({ _id: new ObjectId(raceId) }); } catch (_) {}
+					if (!race) {
+						await interaction.editReply({ content: 'Race not found.', ephemeral: true });
+						return;
+					}
+					if (race.status !== 'betting') {
+						await interaction.editReply({ content: 'Betting is closed for this race.', ephemeral: true });
+						return;
+					}
+					const horse = race.horses[horseIdx];
+					if (!horse) {
+						await interaction.editReply({ content: 'Invalid horse selection.', ephemeral: true });
+						return;
+					}
+
+					const player = await campersCol.findOne({ discordId: interaction.user.id });
+					if (!player) {
+						await interaction.editReply({ content: 'No player record found. Use /join to register.', ephemeral: true });
+						return;
+					}
+
+					const currentStars  = (player.inventory && typeof player.inventory.stars === 'number') ? player.inventory.stars : 0;
+					const existingBet   = (race.bets || []).find(b => b.userId === interaction.user.id);
+					const refundAmount  = existingBet ? existingBet.amount : 0;
+
+					// Prevent re-betting on the same horse
+					if (existingBet && existingBet.horseName === horse.name) {
+						await interaction.editReply({ content: `You already have a bet of **${existingBet.amount}⭐** on **${horse.name}**. To change your bet, click a different horse's button.`, ephemeral: true });
+						return;
+					}
+
+					const netCost = amount - refundAmount;
+					if (currentStars < netCost) {
+						const msg = refundAmount > 0
+							? `Insufficient stars. You need **${netCost}⭐** net (${amount}⭐ new − ${refundAmount}⭐ refund). You have **${currentStars}⭐**.`
+							: `Insufficient stars. You need **${amount}⭐** but only have **${currentStars}⭐**.`;
+						await interaction.editReply({ content: msg, ephemeral: true });
+						return;
+					}
+
+					// Remove previous bet if switching horses
+					if (existingBet) {
+						await playerRacesCol.updateOne({ _id: race._id }, { $pull: { bets: { userId: interaction.user.id } } });
+					}
+					// Add new bet
+					await playerRacesCol.updateOne(
+						{ _id: race._id },
+						{ $push: { bets: { userId: interaction.user.id, horseName: horse.name, amount, placedAt: new Date() } } },
+					);
+					// Deduct stars (net of any refund)
+					await campersCol.updateOne({ _id: player._id }, { $inc: { 'inventory.stars': -netCost } });
+
+					const odds            = race.odds[horseIdx];
+					const potentialPayout = Math.floor(amount * odds);
+					let replyMsg = `Bet placed! You wagered **${amount}⭐** on **${horse.name}** at \`${odds.toFixed(2)}x\`.
+Potential payout: **${potentialPayout}⭐** (profit: +${potentialPayout - amount}⭐).`;
+					if (existingBet) replyMsg += `\n\n*(Your previous bet of ${existingBet.amount}⭐ on ${existingBet.horseName} was refunded.)*`;
+
+					await interaction.editReply({ content: replyMsg, ephemeral: true });
+				} catch (err) {
+					console.error('umarble bet modal error', err);
+					try { await interaction.editReply({ content: 'Error placing bet. Please try again.', ephemeral: true }); } catch (_) {}
 				}
 				return;
 			}
