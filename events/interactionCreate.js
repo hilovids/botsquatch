@@ -217,7 +217,8 @@ module.exports = {
 						const db = await connectToMongo('hilovidsSiteData');
 						const playerRacesCol = db.collection('umarble_player_races');
 						let race = null;
-						try { race = await playerRacesCol.findOne({ _id: new ObjectId(raceId) }); } catch (_) {}
+						const racesCol = db.collection('umarble_races');
+						try { race = await racesCol.findOne({ _id: new ObjectId(raceId) }); } catch (_) {}
 						if (!race || race.status !== 'betting') {
 							await interaction.reply({ content: 'Betting is closed for this race.', ephemeral: true });
 							return;
@@ -590,12 +591,13 @@ module.exports = {
 						return;
 					}
 
+
 					const db = await connectToMongo('hilovidsSiteData');
 					const campersCol     = db.collection('campers');
-					const playerRacesCol = db.collection('umarble_player_races');
+					const racesCol       = db.collection('umarble_races');
 
 					let race = null;
-					try { race = await playerRacesCol.findOne({ _id: new ObjectId(raceId) }); } catch (_) {}
+					try { race = await racesCol.findOne({ _id: new ObjectId(raceId) }); } catch (_) {}
 					if (!race) {
 						await interaction.editReply({ content: 'Race not found.', ephemeral: true });
 						return;
