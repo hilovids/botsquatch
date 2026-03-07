@@ -629,6 +629,10 @@ module.exports = {
 					}
 
 					const netCost = amount - refundAmount;
+                    if (amount > 100) {
+                        await interaction.editReply({ content: 'Maximum bet is 100 stars per race.', ephemeral: true });
+                        return;
+                    }
 					if (currentStars < netCost) {
 						const msg = refundAmount > 0
 							? `Insufficient stars. You need **${netCost}⭐** net (${amount}⭐ new − ${refundAmount}⭐ refund). You have **${currentStars}⭐**.`
@@ -639,10 +643,10 @@ module.exports = {
 
 					// Remove previous bet if switching horses
 					if (existingBet) {
-						await playerRacesCol.updateOne({ _id: race._id }, { $pull: { bets: { userId: interaction.user.id } } });
+						await racesCol.updateOne({ _id: race._id }, { $pull: { bets: { userId: interaction.user.id } } });
 					}
 					// Add new bet
-					await playerRacesCol.updateOne(
+					await racesCol.updateOne(
 						{ _id: race._id },
 						{ $push: { bets: { userId: interaction.user.id, horseName: horse.name, amount, placedAt: new Date() } } },
 					);
