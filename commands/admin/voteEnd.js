@@ -116,9 +116,9 @@ module.exports = {
 
             // send embed to campground channel if available
             let sentToCampground = false;
-            if (discordConfig && discordConfig.campground_id) {
+            if (discordConfig && discordConfig.vote_channel_id) {
                 try {
-                    const campground = await client.channels.fetch(discordConfig.campground_id);
+                    const campground = await client.channels.fetch(discordConfig.vote_channel_id);
                     if (campground) {
                         if (added > 0 && !zipSent) {
                             // if we couldn't DM, attach zip to the campground message
