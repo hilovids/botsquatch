@@ -122,17 +122,11 @@ function buildHorseButtons(horses, raceId, disabled = false) {
     return rows;
 }
 
-function buildStageLeaderboardEmbed(stage, final) {
-    // Lock finished positions: use final order for finished racers, live order for others
-    const finishedNames = (final || []).filter(r => isFinite(r.finishedAt)).map(r => r.name);
-    const finished = (final || []).filter(r => isFinite(r.finishedAt));
-    const live = (stage.positions || []).filter(p => !finishedNames.includes(p.name));
-    // Top 5: finished first, then top live
-    const top = [
-        ...finished.slice(0, 5).map((r, i) => ({ name: r.name, pos: r.total, locked: true })),
-        ...live.slice(0, 5 - finished.length).map((r, i) => ({ name: r.name, pos: r.pos, locked: false }))
-    ].slice(0, 5);
-    const fmt = (e, i) => `${e.locked ? `#${i + 1} (finished)` : `#${i + 1}`} • ${e.name} — ${e.pos.toFixed(1)}m`;
+function buildStageLeaderboardEmbed(stage) {
+    // Show live standings at this stage
+    const positions = (stage.positions || []).slice().sort((a, b) => b.pos - a.pos);
+    const top = positions.slice(0, 5);
+    const fmt = (e, i) => `#${i + 1} • ${e.name} — ${e.pos.toFixed(1)}m`;
     return applyStyle(new EmbedBuilder()
         .setTitle(`Umarble Race — Stage ${stage.stage} Leaderboard`)
         .addFields(
