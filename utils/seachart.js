@@ -293,8 +293,7 @@ async function handleFindItem(db, camper, pos) {
 
     const item = await itemsColl.findOne({ position: position });
     if (!item) {
-        // default nothing
-        await campersColl.updateOne({ discordId: camper.discordId }, { $inc: { 'inventory.nothingTokens': 1 } });
+        // empty cells do not award tokens
         const imgPath = path.join(ASSETS_DIR, 'nothing.png');
         return { type: 'nothing', image: imgPath, filename: 'nothing.png', text: `Nothing found at ${position}.` };
     }
