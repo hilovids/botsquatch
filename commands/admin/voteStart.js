@@ -130,7 +130,7 @@ module.exports = {
 
                             // select menu of eligible targets (quick vote)
                             const select = new StringSelectMenuBuilder()
-                                .setCustomId(`quick_vote_select:${team}`)
+                                .setCustomId(`quick_vote_select:${team}:${camper.discordId}`)
                                 .setPlaceholder('Quick Vote: Choose a Camper!')
                                 .setMinValues(1)
                                 .setMaxValues(1)

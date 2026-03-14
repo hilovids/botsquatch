@@ -122,6 +122,10 @@ module.exports = {
 							await interaction.editReply({ content: 'Could not find your player record. You cannot vote.', ephemeral: true });
 							return;
 						}
+						if (ceremony.team && ceremony.team !== 'all' && voter.team !== ceremony.team) {
+							await interaction.editReply({ content: 'Your team is not voting in this ceremony.', ephemeral: true });
+							return;
+						}
 						if (voter.curses && voter.curses.noVote) {
 							await interaction.editReply({ content: 'You are cursed and cannot vote.', ephemeral: true });
 							return;
@@ -250,7 +254,7 @@ module.exports = {
 				}
 			}
 
-			// Quick user-select: customId => "quick_vote_select:<team>"
+			// Quick user-select: customId => "quick_vote_select:<team>:<voterDiscordId>"
 			if (interaction.isAnySelectMenu && interaction.isAnySelectMenu()) {
 				const cid = interaction.customId || '';
 				// Alliance invite selector: alliance_invite_select:<channelId>:<ownerId>
@@ -376,7 +380,13 @@ module.exports = {
 				if (cid.startsWith('quick_vote_select:')) {
 					await interaction.deferReply({ ephemeral: true });
 					try {
-						const team = cid.split(':')[1] || 'all';
+						const parts = cid.split(':');
+						const team = parts[1] || 'all';
+						const allowedVoterId = parts[2] || null;
+						if (allowedVoterId && String(allowedVoterId) !== String(interaction.user.id)) {
+							await interaction.editReply({ content: 'This quick vote is not assigned to you.', ephemeral: true });
+							return;
+						}
 						const selected = Array.isArray(interaction.values) ? interaction.values[0] : null;
 						if (!selected) {
 							await interaction.editReply({ content: 'No selection made.', ephemeral: true });
@@ -398,6 +408,10 @@ module.exports = {
 						const voter = await campersCol.findOne({ discordId: interaction.user.id });
 						if (!voter) {
 							await interaction.editReply({ content: 'Could not find your player record. You cannot vote.', ephemeral: true });
+							return;
+						}
+						if (ceremony.team && ceremony.team !== 'all' && voter.team !== ceremony.team) {
+							await interaction.editReply({ content: 'Your team is not voting in this ceremony.', ephemeral: true });
 							return;
 						}
 						if (voter.curses && voter.curses.noVote) {

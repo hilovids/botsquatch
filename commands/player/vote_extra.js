@@ -55,6 +55,11 @@ module.exports = {
                 await interaction.editReply({ embeds: [e], ephemeral: true });
                 return;
             }
+            if (ceremony.team && ceremony.team !== 'all' && voter.team !== ceremony.team) {
+                const e = new (require('discord.js')).EmbedBuilder().setTitle('Not Eligible').setDescription('Your team is not voting in this ceremony.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
+                await interaction.editReply({ embeds: [e], ephemeral: true });
+                return;
+            }
             // prevent cursed players with noVote from using extra votes
             if (voter.curses && voter.curses.noVote) {
                 const e = new (require('discord.js')).EmbedBuilder().setTitle('Cursed').setDescription('You are cursed and cannot vote.').setColor(discordConfig && discordConfig.embed && discordConfig.embed.color ? discordConfig.embed.color : 0xFF0000);
