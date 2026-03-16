@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ChannelType, PermissionFlagsBits, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
+const { addBadges } = require('../../utils/badgeManager');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -189,6 +190,7 @@ module.exports = {
                 // can be used anytime; if during elimination send anonymous embed
                 // decrement token
                 await campersCol.updateOne({ _id: voter._id }, { $inc: { ['inventory.' + invKey]: -1 } });
+                await addBadges(campersCol, { _id: voter._id }, ['nothing']);
 
                 if (ceremony) await sendAnonymousEmbed(discordConfig.embed.color);
 

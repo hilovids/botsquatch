@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Jimp = require('jimp');
 const { connectToMongo } = require('./mongodbUtil');
+const { addBadges } = require('./badgeManager');
 
 const BOARD_PATH = path.join(__dirname, '..', 'data', 'seachart_board.json');
 const ASSETS_DIR = path.join(__dirname, '..', 'assets');
@@ -223,7 +224,7 @@ async function renderBoardImage(viewer) {
         const tx = xy.x + Math.floor(cellSize / 2) - 6;
         const ty = xy.y + Math.floor(cellSize / 2) - 10;
         // draw black outline by printing black font at offsets
-        const offsets = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1],[-1,1],[1,-1]];
+        const offsets = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [-1, 1], [1, -1]];
         for (const off of offsets) {
             image.print(fontBlack, tx + off[0], ty + off[1], txt);
         }
@@ -305,7 +306,7 @@ async function handleFindItem(db, camper, pos) {
         const imgPath = itemImagePathForType(item.imageKey) || path.join(ASSETS_DIR, imgName) || path.join(ASSETS_DIR, 'found.png');
         return { type: 'filler', image: imgPath, filename: imgName, text: item.text || `You found something at ${position}.` };
     }
-    // If curse type, set curse on camper but do not mark as found/removed
+    // If curse type, set curse on camper and award badge
     if (type === 'curse') {
         const curseName = item.curseName || 'confused';
         // map 'haunt' curse to the noVote field in camper.curses
@@ -313,6 +314,7 @@ async function handleFindItem(db, camper, pos) {
         const update = {};
         update[`curses.${fieldName}`] = true;
         await campersColl.updateOne({ discordId: camper.discordId }, { $set: update });
+        await addBadges(campersColl, { discordId: camper.discordId }, ['curse']);
         return { type: 'curse', image: itemImagePathForType(item.imageKey || 'silent_curse'), text: `You found a curse (${fieldName}). You are now cursed.` };
     }
 
@@ -347,38 +349,38 @@ async function canReach(startPos, targetPos, maxSteps) {
     const rows = board.height;
     const blocked = new Set((board.blocked || []).map(s => s.toUpperCase()));
 
-    function parsePos(p){
-        if(!p) return null;
+    function parsePos(p) {
+        if (!p) return null;
         const P = p.toUpperCase();
         const col = P.charCodeAt(0) - 65;
-        const row = parseInt(P.slice(1),10);
+        const row = parseInt(P.slice(1), 10);
         if (isNaN(col) || isNaN(row)) return null;
-        return {col,row};
+        return { col, row };
     }
-    function posFor(c,r){ return `${String.fromCharCode(65 + c)}${r}`.toUpperCase(); }
+    function posFor(c, r) { return `${String.fromCharCode(65 + c)}${r}`.toUpperCase(); }
 
     const s = parsePos(startPos);
     const t = parsePos(targetPos);
-    if(!s || !t) return { ok: false, reason: 'invalid' };
+    if (!s || !t) return { ok: false, reason: 'invalid' };
     // quick bounds and blocked checks
-    if (s.col < 0 || s.col >= cols || s.row < 0 || s.row >= rows) return { ok:false, reason:'start_out' };
-    if (t.col < 0 || t.col >= cols || t.row < 0 || t.row >= rows) return { ok:false, reason:'target_out' };
-    if (blocked.has(posFor(t.col,t.row))) return { ok:false, reason:'target_blocked' };
+    if (s.col < 0 || s.col >= cols || s.row < 0 || s.row >= rows) return { ok: false, reason: 'start_out' };
+    if (t.col < 0 || t.col >= cols || t.row < 0 || t.row >= rows) return { ok: false, reason: 'target_out' };
+    if (blocked.has(posFor(t.col, t.row))) return { ok: false, reason: 'target_blocked' };
 
     const startKey = `${s.col},${s.row}`;
     const targetKey = `${t.col},${t.row}`;
 
     const visited = new Set();
-    const q = [{col: s.col, row: s.row, steps: 0}];
+    const q = [{ col: s.col, row: s.row, steps: 0 }];
     visited.add(startKey);
     let sawCornerBlock = false;
 
-    while(q.length){
+    while (q.length) {
         const cur = q.shift();
-        if (cur.col === t.col && cur.row === t.row) return { ok:true };
+        if (cur.col === t.col && cur.row === t.row) return { ok: true };
         if (cur.steps >= maxSteps) continue;
-        for (let dx = -1; dx <= 1; dx++){
-            for (let dy = -1; dy <= 1; dy++){
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
                 if (dx === 0 && dy === 0) continue;
                 const nx = cur.col + dx;
                 const ny = cur.row + dy;
@@ -394,7 +396,7 @@ async function canReach(startPos, targetPos, maxSteps) {
                 const key = `${nx},${ny}`;
                 if (visited.has(key)) continue;
                 visited.add(key);
-                q.push({col: nx, row: ny, steps: cur.steps + 1});
+                q.push({ col: nx, row: ny, steps: cur.steps + 1 });
             }
         }
     }

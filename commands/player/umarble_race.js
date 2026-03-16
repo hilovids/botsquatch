@@ -6,6 +6,7 @@ const {
     ActionRowBuilder, ButtonBuilder, ButtonStyle
 } = require('discord.js');
 const { connectToMongo } = require('../../utils/mongodbUtil');
+const { addBadges } = require('../../utils/badgeManager');
 const { runRaceSimulation } = require('../../utils/umarble/raceSimulator');
 const { renderRacePlot } = require('../../utils/umarble/plotRace');
 
@@ -504,6 +505,7 @@ module.exports = {
                                 { discordId: bet.userId },
                                 { $inc: { 'inventory.stars': payout } },
                             );
+                            await addBadges(campersCol, { discordId: bet.userId }, ['umarble']);
                             payoutLines.push(
                                 `<@${bet.userId}> bet **${bet.amount}⭐** on **${winnerName}** and won **+${profit}⭐** (paid out ${payout}⭐ at \`${winnerOdds.toFixed(2)}x\`)`,
                             );

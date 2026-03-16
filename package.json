@@ -5,7 +5,8 @@
   "main": "bot.js",
   "scripts": {
     "build": "node deploy-commands.js",
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "badge": "node scripts/badgeTool.local.js"
   },
   "author": "Pebblehost",
   "license": "ISC",

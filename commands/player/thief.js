@@ -3,6 +3,7 @@ const { connectToMongo } = require('../../utils/mongodbUtil');
 const fs = require('fs');
 const path = require('path');
 const busyManager = require('../../utils/busyManager');
+const { addBadges } = require('../../utils/badgeManager');
 // track users who currently have a pending /thief in progress
 const pendingThief = new Set();
 
@@ -193,6 +194,7 @@ module.exports = {
                         // decrement target (only if >0), increment thief, set lastThiefAt
                         if (stealAmount > 0) {
                             await campers.updateOne({ discordId: targetUser.id }, { $inc: { 'inventory.stars': -stealAmount, 'stats.starsLost': stealAmount } });
+                            await addBadges(campers, { discordId: interaction.user.id }, ['thief']);
                         }
                         await campers.updateOne({ discordId: interaction.user.id }, { $inc: { 'inventory.stars': stealAmount, 'stats.starsStolen': stealAmount }, $set: { lastThiefAt: new Date() } });
 
